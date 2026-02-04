@@ -1,0 +1,701 @@
+style
+
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ font-family:system-ui;
+ background:#f6f7fb;
+ color:#222;
+}
+
+#app{
+ padding:18px;
+ padding-bottom:90px;
+ max-width:760px;
+ margin:auto;
+}
+
+h1,h2,h3{margin:10px 0}
+
+.card{
+ background:white;
+ border-radius:22px;
+ padding:16px;
+ margin:12px 0;
+ box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
+
+.task{
+ display:flex;
+ align-items:center;
+ gap:14px;
+ padding:14px;
+ border-radius:18px;
+ background:#fafafa;
+ margin:10px 0;
+ transition:.3s;
+}
+
+.task.done{
+ opacity:.45;
+ transform:translateY(6px);
+}
+
+.task img{
+ width:52px;
+ height:52px;
+ border-radius:50%;
+ object-fit:cover;
+ border:3px solid #eee;
+}
+
+button{
+ padding:10px 14px;
+ border-radius:14px;
+ border:none;
+ background:#e9ecf5;
+ cursor:pointer;
+ font-size:14px;
+}
+
+button.primary{
+ background:#7bd68b;
+ color:white;
+}
+
+.miniDel{
+ font-size:12px;
+ padding:4px 6px;
+ border-radius:8px;
+ background:#ffecec;
+ border:none;
+ cursor:pointer;
+}
+
+.moods button{
+ font-size:26px;
+ background:white;
+}
+
+.tabbar{
+ position:fixed;
+ bottom:0;
+ left:0;
+ right:0;
+ display:flex;
+ gap:6px;
+ padding:10px;
+ background:white;
+ box-shadow:0 -2px 12px rgba(0,0,0,.08);
+}
+
+.tabbar button{
+ flex:1;
+}
+
+.goal-bubble img{
+ width:56px;
+ height:56px;
+ border-radius:50%;
+ object-fit:cover;
+ margin-bottom:6px;
+}
+
+.goals-grid{
+ display:grid;
+ grid-template-columns:repeat(2,1fr);
+ gap:16px;
+ padding:12px;
+}
+
+.goal-bubble{
+ background:#fff;
+ border-radius:26px;
+ padding:16px 10px;
+ box-shadow:0 4px 14px rgba(0,0,0,0.08);
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ cursor:pointer;
+}
+
+.goal-bubble.done{
+ opacity:.45;
+ transform:translateY(6px);
+}
+
+.goal-ring{
+ width:120px;
+ height:120px;
+ border-radius:50%;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ position:relative;
+}
+
+.goal-ring img{
+ width:86px;
+ height:86px;
+ border-radius:50%;
+ object-fit:cover;
+ z-index:2;
+ background:white;
+}
+
+.goal-title{
+ font-size:15px;
+ font-weight:600;
+ text-align:center;
+ margin-bottom:8px;
+}
+
+.goal-progress{
+ font-size:14px;
+ margin-top:8px;
+ font-weight:600;
+}
+
+.goal-ring::after{
+ content:"";
+ position:absolute;
+ width:70px;
+ height:70px;
+ border-radius:50%;
+ background:white;
+}
+
+.goal-pop{
+ position:fixed;
+ inset:0;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:28px;
+ font-weight:700;
+ background:rgba(255,255,255,.85);
+ backdrop-filter:blur(4px);
+ z-index:9999;
+ animation:goalPop .6s ease;
+ text-align:center;
+}
+
+@keyframes goalPop{
+ from{
+  transform:scale(.6);
+  opacity:0;
+ }
+ to{
+  transform:scale(1);
+  opacity:1;
+ }
+}
+
+.goal-bubble.done{
+ opacity:.35;
+ transform:scale(.9);
+}
+
+.goal-detail{
+ text-align:center;
+}
+
+.goal-detail-img{
+ width:160px;
+ height:160px;
+ border-radius:50%;
+ object-fit:cover;
+ box-shadow:0 6px 18px rgba(0,0,0,.15);
+ margin-bottom:14px;
+}
+
+.goal-big-ring{
+ width:160px;
+ height:160px;
+ border-radius:50%;
+ margin:14px auto;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:24px;
+ font-weight:700;
+ background:
+ conic-gradient(#7bd68b var(--p), #e9ecf5 0);
+}
+
+.goal-count{
+ font-size:16px;
+ margin-top:6px;
+}
+
+.goal-link{
+ margin-top:10px;
+ font-size:14px;
+ opacity:.8;
+}
+
+.goal-meta{
+ font-size:12px;
+ opacity:.6;
+ margin-top:6px;
+}
+
+.goal-block{
+ margin-top:14px;
+ font-size:14px;
+ background:#f7f9ff;
+ padding:10px;
+ border-radius:10px;
+}
+
+.goal-stats{
+ margin-top:12px;
+ font-size:13px;
+ opacity:.7;
+}
+
+.goal-ring{
+ position:relative;
+}
+
+.goal-ring-label{
+ position:absolute;
+ font-size:14px;
+ font-weight:700;
+ z-index:3;
+ text-shadow:0 1px 3px rgba(0,0,0,0.25);
+}
+
+.modal{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.35);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+
+.modal-box{
+ background:white;
+ border-radius:20px;
+ padding:18px;
+ max-width:420px;
+ width:92%;
+}
+
+.goal-meta-small{
+ font-size:12px;
+ opacity:.6;
+ margin-top:4px;
+}
+
+.metric-row{
+ background:white;
+ border-radius:16px;
+ padding:12px;
+ margin:8px 0;
+ box-shadow:0 3px 10px rgba(0,0,0,.05);
+}
+
+.metric-last{
+ font-size:13px;
+ opacity:.6;
+ margin-top:4px;
+}
+
+.metric-grid{
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+}
+
+.metric-card{
+ background:#f7f8fc;
+ border-radius:14px;
+ padding:12px;
+}
+
+.metric-head{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:8px;
+}
+
+.metric-label{
+ border:none;
+ background:transparent;
+ font-weight:600;
+ font-size:14px;
+ width:100%;
+}
+
+.metric-actions{
+ display:flex;
+ gap:6px;
+}
+
+.metric-last{
+ font-size:12px;
+ opacity:.7;
+ margin-top:4px;
+}
+
+.metric-input-row{
+ display:flex;
+ gap:6px;
+ margin-top:8px;
+}
+
+.miniBtn{
+ font-size:12px;
+ padding:4px 6px;
+}
+
+/* ===== UI SOFT DESIGN ===== */
+
+.card{
+ border-radius:16px;
+ padding:14px 16px;
+ box-shadow:0 2px 10px rgba(0,0,0,.05);
+ margin-bottom:12px;
+ background:white;
+}
+
+.metric-card{
+ padding:10px;
+ border-radius:14px;
+ background:#f8f9fc;
+}
+
+input, select, textarea{
+ border-radius:12px;
+ padding:10px;
+ border:1px solid #e3e6ef;
+ background:#fafbff;
+}
+
+/* ===== PANIC BREATH UI ===== */
+
+.breath-overlay{
+ position:fixed;
+ inset:0;
+ background:rgba(28,54,68,.42);
+ backdrop-filter:blur(7px);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ z-index:9999;
+}
+
+.breath-box{
+ background:#f3f8f7;
+ border-radius:28px;
+ padding:34px;
+ text-align:center;
+ width:320px;
+
+ box-shadow:
+ 0 25px 70px rgba(0,0,0,.18);
+}
+
+
+
+/* Text */
+
+#breathText{
+ font-size:22px;
+ font-weight:600;
+ color:#2c3e50;
+ margin-bottom:16px;
+ letter-spacing:.4px;
+}
+
+.moodInsight{
+ font-size:14px;
+ line-height:1.5;
+ opacity:.85;
+}
+
+/* Zusatz für Panic Overlay Text */
+
+.breathHint{
+ font-size:14px;
+ opacity:.75;
+ line-height:1.4;
+ margin-bottom:14px;
+ color:#355f63;
+}
+
+/* Button im Overlay weicher */
+
+.breath-box button{
+ margin-top:10px;
+ padding:10px 14px;
+ border-radius:14px;
+ border:none;
+ background:#e3f3ef;
+ font-weight:600;
+}
+
+.panic-float{
+ position:fixed;
+ right:16px;
+ bottom:110px;
+
+ width:54px;
+ height:54px;
+ border-radius:50%;
+
+ background:linear-gradient(
+ 180deg,
+ #dff4ff,
+ #c8f1e4
+ );
+
+ display:flex;
+ align-items:center;
+ justify-content:center;
+
+ font-size:26px;
+
+ box-shadow:
+ 0 8px 22px rgba(140,200,190,.28);
+
+ border:none;
+ cursor:pointer;
+
+ transition:.25s;
+}
+
+.panic-float:hover{
+ transform:scale(1.08);
+ box-shadow:0 12px 30px rgba(140,200,190,.38);
+}
+
+.focusRow{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ line-height:1.2;
+}
+
+.focusItem{
+ display:flex;
+ flex-direction:column;
+ gap:4px;
+
+ background:#ffffffb8;
+ border-radius:16px;
+ padding:12px 14px;
+
+ box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+
+.focusTitle{
+ font-size:16px;
+ font-weight:600;
+ display:flex;
+ align-items:center;
+ gap:10px;
+}
+
+.focusSub{
+ font-size:13px;
+ opacity:.65;
+ line-height:1.35;
+ padding-left:28px;
+}
+
+.panicExplain{
+ font-size:13px;
+ opacity:.65;
+ margin-bottom:12px;
+ line-height:1.4;
+}
+
+.panicInfoWrap{
+ margin:6px 0 10px;
+}
+
+.panicInfoBtn{
+ background:none;
+ border:none;
+ font-size:18px;
+ cursor:pointer;
+ opacity:.7;
+}
+
+.panicInfoText{
+ display:none;
+ font-size:13px;
+ line-height:1.4;
+ opacity:.75;
+ margin-top:6px;
+}
+
+.affirmationCard {
+ font-size: 18px;
+ text-align: center;
+ background: #f3faf8;
+ border-left: 5px solid #7ecfc0;
+}
+
+.affirmationText{
+ font-size:18px;
+ font-weight:600;
+ line-height:1.4;
+ padding:8px 6px;
+}
+
+.affirmBox{
+ position:fixed;
+ left:50%;
+ bottom:150px;
+ transform:translateX(-50%);
+ background:#f3f8f7;
+ padding:14px 18px;
+ border-radius:18px;
+ font-size:15px;
+ box-shadow:0 8px 22px rgba(0,0,0,.12);
+ z-index:999;
+ animation:fadeIn .4s ease;
+}
+
+@keyframes fadeIn{
+ from{opacity:0; transform:translateX(-50%) translateY(10px);}
+ to{opacity:1; transform:translateX(-50%) translateY(0);}
+}
+
+.moodInsightCard{
+ background:#f3f8f7;
+ border-radius:16px;
+ padding:14px;
+ margin-top:12px;
+ font-size:14px;
+ line-height:1.5;
+ box-shadow:0 4px 14px rgba(0,0,0,.06);
+}
+
+.analysisInfo{
+ font-size:13px;
+ opacity:.65;
+ margin:8px 0 12px 0;
+ line-height:1.4;
+}
+
+.moodClickable{
+ cursor:pointer;
+ transition:.2s;
+}
+
+.moodClickable:hover{
+ transform:translateY(-2px);
+ box-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+.moodHero{
+ display:flex;
+ align-items:center;
+ gap:16px;
+}
+
+.moodHeroEmoji{
+ font-size:48px;
+}
+
+.moodHeroText span{
+ opacity:.6;
+ font-size:13px;
+}
+
+.moodChipRow{
+ display:flex;
+ gap:12px;
+ flex-wrap:wrap;
+}
+
+.moodChip{
+ background:#f3f8f7;
+ padding:10px;
+ border-radius:14px;
+ text-align:center;
+ min-width:54px;
+}
+
+.moodBig{
+ font-size:26px;
+}
+
+.moodClickable{
+ cursor:pointer;
+ transition:.15s;
+}
+
+.moodClickable:hover{
+ transform:scale(1.02);
+}
+
+/* ===== Mood Analyse Final Polish ===== */
+
+.moodClickable{
+ cursor:pointer;
+ transition:.18s ease;
+}
+
+.moodClickable:active{
+ transform:scale(.985);
+}
+
+.analysisInfo{
+ background:#eef3f8;
+ padding:10px 12px;
+ border-radius:12px;
+ margin-bottom:10px;
+}
+
+/* bessere Karten-Hierarchie */
+
+.card h3{
+ margin-top:0;
+ margin-bottom:8px;
+ font-size:16px;
+}
+
+/* Mood Hero Card schöner zentriert */
+
+.moodHero{
+ align-items:center;
+}
+
+.moodHeroEmoji{
+ width:64px;
+ text-align:center;
+}
+
+/* Mood Chips gleichmäßiger */
+
+.moodChip{
+ min-width:60px;
+ font-weight:600;
+}
+
+/* Panic Overlay Buttons ruhiger */
+
+.breath-box button.primary{
+ background:#7ecfc0;
+}
+
+/* Focus Items leichter */
+
+.focusItem{
+ background:#ffffffcc;
+}
+
+/* Affirmation Box smoother */
+
+.affirmBox{
+ backdrop-filter:blur(6px);
+}
