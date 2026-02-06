@@ -503,35 +503,47 @@ function openItems(catId, subId){
  const box = document.getElementById("itemBox")
 
  sub.items.forEach(i=>{
-  const d=document.createElement("div")
-  d.className="card"
 
-  d.innerHTML=`
-   <strong>${i.name}</strong><br>
-   ${i.type==="text" ? i.text : ""}
-${i.type==="link" ? `<a href="${i.url}" target="_blank">${i.url}</a>` : ""}
-${i.type==="image" ? `<img src="${i.data}" width="160">` : ""}
+  const d = document.createElement("div")
+  d.className = "card"
 
-<div style="margin-top:8px">
+  d.innerHTML = `
+  <strong>${i.name}</strong>
 
-<button onclick="
-createTaskFromCategoryItem(
-'${i.name}',
-'${catId}',
-'${subId}',
-'${i.id}'
-)">
-✅ als Task planen
-</button>
+  <div style="
+   margin-top:10px;
+   display:flex;
+   gap:8px;
+   flex-wrap:wrap;
+  ">
 
-<button style="float:right"
-onclick="deleteItem('${catId}','${subId}','${i.id}')">
-✖
-</button>
+  <button onclick="
+  openStorageFromTask({
+   catId:'${catId}',
+   subId:'${subId}',
+   itemId:'${i.id}'
+  })
+  ">
+  📂 öffnen
+  </button>
 
-</div>
+  <button onclick="
+  createTaskFromCategoryItem(
+   '${i.name}',
+   '${catId}',
+   '${subId}',
+   '${i.id}'
+  )
+  ">
+  ✅ Task planen
+  </button>
 
-  
+  <button style="margin-left:auto"
+  onclick="deleteItem('${catId}','${subId}','${i.id}')">
+  🗑️
+  </button>
+
+  </div>
   `
 
   box.appendChild(d)
@@ -541,73 +553,46 @@ onclick="deleteItem('${catId}','${subId}','${i.id}')">
 
 
 
-
 function addItemPrompt(catId, subId){
 
- const name = prompt("Name des Eintrags")
- if(!name) return
+ const modal = document.createElement("div")
+ modal.className = "modal"
 
-const type = prompt(
- "Typ eingeben:\ntext / link / image"
-)?.toLowerCase()
+ modal.innerHTML = `
+ <div class="modal-box">
 
- if(!type) return
+ <h3>Neuer Eintrag</h3>
 
-// -------- TEXT --------
+ <input id="itemName" placeholder="Titel">
 
- if(type === "text"){
-  const text = prompt("Text / Beschreibung") || ""
-  addCategoryItem(catId, subId, {
-   name,
-   type:"text",
-   text
-  })
-  return
- }
+ <select id="itemType" onchange="toggleItemType()">
+  <option value="text">Text</option>
+  <option value="link">Link</option>
+  <option value="image">Bild</option>
+ </select>
 
-// -------- LINK --------
+ <textarea id="itemText" placeholder="Text"></textarea>
 
- if(type === "link"){
-  const url = prompt("URL eingeben")
-  if(!url) return
+ <input id="itemLink" placeholder="https://"
+ style="display:none">
 
-  addCategoryItem(catId, subId, {
-   name,
-   type:"link",
-   url
-  })
-  return
- }
+ <input type="file" id="itemImg"
+ accept="image/*"
+ style="display:none">
 
-// -------- IMAGE / VIDEO --------
+ <button class="primary"
+ onclick="saveItemModal('${catId}','${subId}')">
+ speichern
+ </button>
 
-if(type === "image"){
+ <button onclick="closeModal()">abbrechen</button>
 
- const input = document.createElement("input")
- input.type = "file"
- input.accept = "image/*"
+ </div>
+ `
 
-  input.onchange = e => {
-   const file = e.target.files[0]
-   if(!file) return
-
-   const r = new FileReader()
-   r.onload = ()=>{
-    addCategoryItem(catId, subId, {
-     name,
-     type,
-     data: r.result
-    })
-   }
-   r.readAsDataURL(file)
-  }
-
-  input.click()
-  return
- }
-
- alert("Typ nicht erkannt")
+ document.body.appendChild(modal)
 }
+
 
 function deleteItem(catId, subId, itemId){
  if(!confirm("Eintrag wirklich löschen?")) return
@@ -876,23 +861,12 @@ function getTopStreaks(){
 
 // ========= GOAL PROGRESS =========
 
-function goalProgress(goal){
-
-if(goal.metricKey){
- return goal.metricHits?.length ? 100 : 0
+function goalProgress(g){
+ if(!g.target) return 0
+ return goalPercent(g)
 }
 
- const auto = goalAutoCount(goal)
- const manual = goal.manual || 0
- const count = auto + manual
 
- if(!goal.target) return 0
-
- return Math.min(
-  100,
-  Math.round((count / goal.target) * 100)
- )
-}
 
 function goalAutoCount(goal){
 
@@ -945,17 +919,62 @@ if(goal.mode === "week"){
 
 // ========= mood =========
 
-const moodText = {
- "🤩": "Wow — was für ein Glow! Halt kurz inne und genieß das Gefühl 💫",
- "😄": "So schön — lächeln steht dir richtig gut 🌿",
- "😊": "Schön! Geniesse den Moment richtig ✨",
- "🧘🏽‍♀️": "Weiter so! Atme noch einmal bewusst ein 🤍",
- "🥰": "Wie schön! 💞",
+const moodTexts = {
 
- "🫠": "Langeweile ist oft ein Signal. Mini-Impuls: steh kurz auf und streck dich 🙆🏼‍♀️",
- "😢": "Ich seh dich. Leg eine Hand auf deine Brust und atme 3x tief 💛",
- "😡": "Du darfst deine Wut rauslassen! stampf 10 Sekunden fest auf den Boden 🔥",
- "😒": "Genervt sein ist okay. Schultern hochziehen — fallen lassen — 3x 🌬"
+ "🤩": [
+  "Da ist richtig viel Lebendigkeit heute ✨",
+  "Wow — sauge das Gefühl richtig auf🪁",
+  "Das fühlt sich nach Aufblühen an 🌞"
+ ],
+
+ "😄": [
+  "Leichtigkeit steht dir gut 🌿",
+  "Schön, dass du dich gerade so gut fühlst🤍",
+  "Das darfst du geniessen🌸"
+ ],
+
+ "😊": [
+  "Das ist ein ruhiger, guter Moment ✨",
+  "Sanft zufrieden ist vollkommen genug💞",
+  "Du bist gerade gut bei dir🌿"
+ ],
+
+ "🧘🏽‍♀️": [
+  "Dein System wirkt gerade ruhig 🌿",
+  "Das ist innere Balance ⚖️",
+  "Du bist schön geerdet🌳"
+ ],
+
+ "🥰": [
+  "Das fühlt sich warm und verbunden an 🤍",
+  "Da ist gerade viel Herz da🪄",
+  "Nähe und Weichheit dürfen sein💌"
+ ],
+
+ "🫠": [
+  "Etwas flach gerade — und das ist okay✨",
+  "Vielleicht braucht dein System sanfte Aktivierung💪🏼",
+  "Ein kleiner Impuls könnte gut tun🪄"
+ ],
+
+ "😢": [
+  "Das darf gerade schwer sein 🤍",
+  "Du musst da nicht allein durch🫂",
+  "Diese Gefühle dürfen da sein💞"
+ ],
+
+ "😡": [
+  "Da ist viel Energie im Raum⚡️",
+  "Wut zeigt oft, dass etwas wichtig ist❗️",
+  "Atmen — und bewege dich💃🏼"
+ ],
+
+ "😒": [
+  "Genervt sein ist verständlich🌿",
+  "Vielleicht war es gerade viel🫶🏼",
+  "Ein kleiner Abstand könnte gut tun🌸"
+ ]
+
 }
 
 const moodScore = {
@@ -1014,8 +1033,9 @@ function saveMood(e){
    triggerAffirmation("neutral")
  }
 
- alert(moodText[e])
+// alert(moodTextFor(e))
  render()
+setTimeout(openStateCheckOverlay, 400)
 }
 
 function moodForPhase(phase){
@@ -1024,7 +1044,37 @@ function moodForPhase(phase){
   m.phase === phase
  )
 }
- 
+ function moodTextFor(emoji){
+
+ const arr = moodTexts[emoji]
+ if(!arr) return ""
+
+ return arr[Math.floor(Math.random()*arr.length)]
+}
+
+// ========= energy check =========
+
+const energySuggestions = {
+
+ low: {
+  text: "Dein System wirkt gerade erschöpft 🤍",
+  action: "2-Minuten Reset",
+  fn: "startMiniReset"
+ },
+
+ mid: {
+  text: "Etwas Spannung ist da — wir regulieren sanft 🌿",
+  action: "Atemhilfe starten",
+  fn: "openPanicOverlay"
+ },
+
+ ok: {
+  text: "Du hast noch etwas Energie ✨",
+  action: "8-Minuten Fokus",
+  fn: "startFocusBlock"
+ }
+
+}
 
 // ========= task card =========
 
@@ -1156,27 +1206,40 @@ ${a ? `
    return `<div class="card">Mood nur am aktuellen Tag möglich 🌿</div>`
   }
 
-  if(!m){
-   return `
-    <div class="card">
-     <h3>Wie geht es dir gerade?</h3>
-     <div class="moods">
-      ${["🤩","😄","😊","🧘🏽‍♀️","🥰","🫠","😢","😡","😒"]
-        .map(e=>`<button onclick="saveMood('${e}')">${e}</button>`)
-        .join("")}
-     </div>
-    </div>
-   `
-  }
+if(!m){
 
-  return `
-   <div class="card" style="text-align:center">
-    <div style="font-size:56px">${m.emoji}</div>
-    <div style="margin-top:8px">
-     Mood gespeichert für diese Tageszeit 🌿
-    </div>
-   </div>
-  `
+return `
+
+<h3>Wie fühlst du dich gerade?</h3>
+ <div class="moods">
+ ${["🤩","😄","😊","🧘🏽‍♀️","🥰","🫠","😢","😡","😒"]
+   .map(e=>`<button class="moodBtn" onclick="saveMood('${e}')">${e}</button>`)
+   .join("")}
+ </div>
+`
+}
+
+return `
+ <div class="card" style="text-align:center">
+
+<div class="moodSaved">${m.emoji}</div>
+
+  <div style="
+    margin-top:10px;
+    font-size:15px;
+    opacity:.85;
+    line-height:1.4
+  ">
+   ${moodTextFor(m.emoji)}
+  </div>
+
+  <div style="margin-top:8px;font-size:13px;opacity:.6">
+   Mood gespeichert für diese Tageszeit 🌿
+  </div>
+
+ </div>
+`
+
  })()}
 
  <button class="primary" onclick="openPlanDialog()">＋ Task planen</button>
@@ -1310,30 +1373,32 @@ function newCatalogTask(){
  const input = document.createElement("input")
  input.type = "file"
  input.accept = "image/*"
+ input.style.display = "none"
+
+ // 🔥 WICHTIG für Safari / iOS
+ document.body.appendChild(input)
 
  input.onchange = e => {
 
-if(!e.target.files.length){
- addCatalogTask(name,null)
- return
-}
-
-  const file = e.target.files[0]
-
-  if(!file){
-   addCatalogTask(name, null)
+  if(!e.target.files.length){
+   addCatalogTask(name,null)
+   input.remove()
    return
   }
 
+  const file = e.target.files[0]
+
   const r = new FileReader()
 
-  r.onload = ()=>{
+  r.onloadend = ()=>{
    addCatalogTask(name, r.result)
+   input.remove()
   }
 
   r.onerror = ()=>{
    alert("Bild konnte nicht gelesen werden")
-   addCatalogTask(name, null)
+   addCatalogTask(name,null)
+   input.remove()
   }
 
   r.readAsDataURL(file)
@@ -1341,7 +1406,6 @@ if(!e.target.files.length){
 
  input.click()
 }
-
 
 // ========= GOALS =========
 
@@ -1575,6 +1639,29 @@ function goalAddManual(id){
  g.manual = (g.manual || 0) + 1
  saveGoals()
  openGoalDetail(id)
+}
+
+function goalCurrentValue(g){
+
+ let v = g.manual || 0
+
+ // Task linked → über logs + goalAutoCount
+ if(g.taskId){
+  v += goalAutoCount(g)
+ }
+
+ // Metric linked
+ if(g.metricKey && g.metricHits){
+  v += g.metricHits.length
+ }
+
+ return v
+}
+
+function goalPercent(g){
+ if(!g.target) return 0
+ const cur = goalCurrentValue(g)
+ return Math.min(100, Math.round((cur / g.target) * 100))
 }
 
 // ========= PLAN DIALOG UI =========
@@ -1852,8 +1939,8 @@ function openGoalCreate(){
  placeholder="Metric Zielwert">
 
 <select id="goalMetricMode">
- <option value=">=">größer/gleich Ziel</option>
- <option value="<=">kleiner/gleich Ziel</option>
+ <option value="gte">größer/gleich Ziel</option>
+ <option value="lte">kleiner/gleich Ziel</option>
 </select>
 
 <label>Metric Wiederholung</label>
@@ -1889,72 +1976,41 @@ function toggleAffirmations(off){
 
 function saveGoalCreate(){
 
- const name = goalName.value
- const target = parseInt(goalTarget.value,10)
- const taskId = goalTask.value || null
- const file = goalImg.files[0]
-const why = goalWhy.value || ""
-const note = goalNote.value || ""
-const mode = goalMode.value
-const due = goalDue.value || null
+ function finishSave(imgData){
 
-// ---- Metric Goal Felder ----
+  const goal = {
+   id: uid(),
+   name: goalName.value.trim(),
+   target: parseInt(goalTarget.value,10) || 1,
+   mode: goalMode.value,
+   due: goalDue.value || null,
+   why: goalWhy.value || "",
+   note: goalNote.value || "",
+   taskId: goalTask.value || null,
+   start: goalStart.value || todayISO(),
+   img: imgData || null,
 
-const metricKey = goalMetricKey.value || null
+   metricKey: goalMetricKey.value || null,
+   metricTarget: parseFloat(goalMetricTarget.value) || null,
+   metricMode: goalMetricMode.value || null,
+   metricRepeat: goalMetricRepeat.value || "once",
+   metricEveryX: parseInt(goalMetricEveryX.value,10) || null
+  }
 
-const metricTarget =
- parseFloat(goalMetricTarget.value) || null
-
-const metricMode = goalMetricMode.value || ">="
-
-const metricRepeat =
- goalMetricRepeat.value || "once"
-
-const metricEveryX =
- parseInt(goalMetricEveryX.value,10) || null
-
- if(!name || !target){
-  alert("Name + Zielanzahl nötig")
-  return
- }
-
-const base = {
- id: uid(),
- name,
- target,
- mode,
- due,
- taskId,
- img:null,
- completedShown:false,
- archived:false,
- why,
- note,
- manual:0,
- start: goalStart.value || todayISO(),
-
- // ===== Metric Goal Support =====
- metricKey,
- metricTarget,
- metricMode,
- metricRepeat,
- metricEveryX,
- metricHits: []
-}
-
- if(!file){
-  addGoal(base)
-  renderGoals()
-  return
- }
-
- const r = new FileReader()
- r.onload = ()=>{
-  base.img = r.result
-  addGoal(base)
+  addGoal(goal)
   renderGoals()
  }
- r.readAsDataURL(file)
+
+ const file =
+  document.getElementById("goalImg").files[0]
+
+if(file){
+ const reader = new FileReader()
+ reader.onloadend = e => finishSave(e.target.result)
+ reader.readAsDataURL(file)
+} else {
+  finishSave(null)
+ }
 }
 
 // ===== HARD RESET BUTTON =====
@@ -2200,10 +2256,10 @@ if(isNaN(v)) return
 
 let pass = false
 
-if(g.metricMode === ">=")
+if(g.metricMode === "gte")
  pass = v >= g.metricTarget
 
-if(g.metricMode === "<=")
+if(g.metricMode === "lte")
  pass = v <= g.metricTarget
 
   if(!pass) return
@@ -2286,7 +2342,6 @@ ${arr.map((x,i)=>`
 function drawMetricChart(arr){
 
  arr = arr.slice().sort((a,b)=>a.date.localeCompare(b.date))
-
  if(arr.length < 2) return
 
  const c = document.getElementById("metricChart")
@@ -2307,6 +2362,35 @@ function drawMetricChart(arr){
  const min = Math.min(...values)
  const max = Math.max(...values)
  const range = (max-min) || 1
+
+ ctx.clearRect(0,0,w,h)
+
+ // Linie zeichnen
+ ctx.beginPath()
+
+ values.forEach((v,i)=>{
+
+  const px = pad + i/(values.length-1)*(w-pad*2)
+  const py = h-pad - ((v-min)/range)*(h-pad*2)
+
+  if(i === 0) ctx.moveTo(px,py)
+  else ctx.lineTo(px,py)
+ })
+
+ ctx.stroke()
+
+ // ✅ Punkte zeichnen — HIER gehört dein Block hin
+ values.forEach((v,i)=>{
+
+  const px = pad + i/(values.length-1)*(w-pad*2)
+  const py = h-pad - ((v-min)/range)*(h-pad*2)
+
+  ctx.beginPath()
+  ctx.arc(px,py,5,0,Math.PI*2)
+  ctx.fill()
+ })
+
+}
 
  // ---------- Hintergrund Grid ----------
 
@@ -2343,16 +2427,6 @@ function drawMetricChart(arr){
 
  // ---------- Punkte ----------
 
- values.forEach((v,i)=>{
-
-  const px = pad + i/(values.length-1)*(w-pad*2)
-  const py = h-pad - ((v-min)/range)*(h-pad*2)
-
-  ctx.beginPath()
-  ctx.arc(px,py,5,0,Math.PI*2)
-  ctx.fill()
- })
-}
 
 function deleteMetricEntry(key,index){
 
@@ -2483,24 +2557,44 @@ function openGoalEdit(id){
   goalTask.value = g.taskId
  }
 
- // Button neu verdrahten (kein Modal!)
  const btn = document.querySelector(".primary")
 
  btn.onclick = () => {
 
-  g.name = goalName.value.trim()
-  g.target = parseInt(goalTarget.value,10) || 1
-  g.mode = goalMode.value
-  g.due = goalDue.value || null
-  g.why = goalWhy.value || ""
-  g.note = goalNote.value || ""
-  g.taskId = goalTask.value || null
-  g.start = goalStart.value || todayISO()
+  function finishUpdate(imgData){
 
-  saveGoals()
-  openGoalDetail(id)
+   g.name = goalName.value.trim()
+   g.target = parseInt(goalTarget.value,10) || 1
+   g.mode = goalMode.value
+   g.due = goalDue.value || null
+   g.why = goalWhy.value || ""
+   g.note = goalNote.value || ""
+   g.taskId = goalTask.value || null
+   g.start = goalStart.value || todayISO()
+
+   if(imgData){
+    g.img = imgData
+   }
+
+   saveGoals()
+   openGoalDetail(id)
+  }
+
+  const file =
+   document.getElementById("goalImg").files[0]
+
+  if(file){
+   const reader = new FileReader()
+   reader.onloadend = e => finishUpdate(e.target.result)
+   reader.readAsDataURL(file)
+  } else {
+   finishUpdate(null)
+  }
+
  }
+
 }
+
 
 function openCycleInsights(){
 
@@ -3131,8 +3225,10 @@ function panicNext(){
 
  if(panicStep > 4){
   closePanicOverlay()
-  triggerAffirmation()
-  renderHome()
+
+triggerAffirmation()
+openStateCheckOverlay()
+
   return
  }
 
@@ -3199,6 +3295,94 @@ function startBreathingCycle(){
 
  // 🔧 minimal delay → verhindert Startglitch
  breathTimer = setTimeout(inhale, 80)
+}
+
+
+// ======================
+// STATE CHECK SYSTEM
+// ======================
+
+function openStateCheckOverlay(){
+
+ let box = document.getElementById("panicOverlay")
+
+ if(!box){
+  box = document.createElement("div")
+  box.className = "breath-overlay"
+  box.id = "panicOverlay"
+  document.body.appendChild(box)
+ }
+
+ box.style.display = "flex"
+
+ box.innerHTML = `
+ <div class="breath-box">
+
+  <h3>Wie ist deine Energie gerade?</h3>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+
+   <button class="primary"
+    onclick="handleEnergyChoice('low')">
+    niedrig
+   </button>
+
+   <button class="primary"
+    onclick="handleEnergyChoice('mid')">
+    mittel
+   </button>
+
+   <button class="primary"
+    onclick="handleEnergyChoice('ok')">
+    ok
+   </button>
+
+  </div>
+
+ </div>
+ `
+}
+
+function handleEnergyChoice(level){
+
+ let action = null
+
+ if(level === "low") action = "reset"
+ if(level === "mid") action = "breath"
+ if(level === "ok")  action = "continue"
+
+ runMiniAction(action)
+}
+
+
+function runMiniAction(type){
+
+ const box = document.getElementById("panicOverlay")
+
+ if(type === "reset"){
+  box.innerHTML = `
+   <div class="breath-box">
+    <h3>2-Minuten Reset 🌿</h3>
+    Augen schließen — 10 Atemzüge zählen.
+    <br><br>
+    <button class="primary"
+     onclick="closePanicOverlay(); triggerAffirmation(); renderHome()">
+     fertig
+    </button>
+   </div>
+  `
+  return
+ }
+
+ if(type === "breath"){
+  panicStep = 1
+  renderPanicStep()
+  return
+ }
+
+ // continue
+ closePanicOverlay()
+ renderHome()
 }
 
 // ======================
@@ -3403,4 +3587,20 @@ function openMoodTrendDetail(){
    ).join("<br>")}
  </div>
  `
+}
+
+function startMiniReset(){
+
+ alert(
+  "Mini Reset 🌿\n\n" +
+  "• Schultern lockern\n" +
+  "• 6 tiefe Atemzüge\n" +
+  "• Hände reiben\n" +
+  "• Blick in die Ferne"
+ )
+
+}
+
+function startFocusBlock(){
+ alert("8 Minuten Fokusblock gestartet ✨")
 }

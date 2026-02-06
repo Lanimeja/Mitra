@@ -78,6 +78,18 @@ button.primary{
  background:white;
 }
 
+.moods{
+ display:flex;
+ gap:10px;
+ overflow-x:auto;
+ padding:6px 2px;
+}
+
+.moods button{
+ font-size:22px;
+padding:8px;
+}
+
 .tabbar{
  position:fixed;
  bottom:0;
@@ -698,4 +710,21 @@ input, select, textarea{
 
 .affirmBox{
  backdrop-filter:blur(6px);
+}
+
+. .moodBtn{
+ font-size:24px;
+ padding:8px;
+ border-radius:12px;
+ min-width:44px;
+ flex:0 0 auto;
+}
+
+.moodBtn:active{
+ transform:scale(.95);
+}
+
+.moodSaved{
+ font-size:42px;
+ margin-bottom:6px;
 }
