@@ -59,17 +59,8 @@ function openIconPicker(onPick){
 
 function pickIcon(name){
 
- // global speichern
  pickedIcon = name
 
- // Preview aktualisieren (falls vorhanden)
- const prev = document.getElementById("iconPreviewIcon")
- if(prev){
-  prev.setAttribute("data-lucide", name)
-  lucide.createIcons()
- }
-
- // Callback ausführen (z.B. Dialog)
  if(window._iconPickCallback){
   window._iconPickCallback(name)
  }
@@ -1892,7 +1883,6 @@ function pickGoalIcon(name){
 
 function render(){
 
- // 🔥 UI-Blocker Cleanup (Modal / Overlay Reste entfernen)
  document.querySelectorAll(".modal, .breath-overlay, .goal-pop")
   .forEach(e => e.remove())
 
@@ -1903,6 +1893,8 @@ function render(){
  else if(page==="goals") renderGoals()
  else if(page==="settings") renderSettings()
  else app.innerHTML="<h1>Kommt bald ✨</h1>"
+
+ setTimeout(()=>lucide.createIcons(),0)
 }
 
 render()
