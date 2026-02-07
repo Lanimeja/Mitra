@@ -18,14 +18,6 @@ body{
 
 h1,h2,h3{margin:10px 0}
 
-.card{
- background:white;
- border-radius:22px;
- padding:16px;
- margin:12px 0;
- box-shadow:0 6px 18px rgba(0,0,0,.06);
-}
-
 .task{
  display:flex;
  align-items:center;
@@ -287,6 +279,9 @@ padding:8px;
  display:flex;
  align-items:center;
  justify-content:center;
+
+ z-index:10000;
+ pointer-events:auto;
 }
 
 .modal-box{
@@ -400,6 +395,7 @@ input, select, textarea{
  align-items:center;
  justify-content:center;
  z-index:9999;
+ pointer-events:auto;
 }
 
 .breath-box{
@@ -712,7 +708,7 @@ input, select, textarea{
  backdrop-filter:blur(6px);
 }
 
-. .moodBtn{
+.moodBtn{
  font-size:24px;
  padding:8px;
  border-radius:12px;
@@ -727,4 +723,298 @@ input, select, textarea{
 .moodSaved{
  font-size:42px;
  margin-bottom:6px;
+}
+
+.goal-pop{
+ position:fixed;
+ inset:0;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ background:rgba(0,0,0,.25);
+ z-index:9999;
+ animation: fadeIn .25s ease;
+}
+
+.goal-pop-box{
+ background:white;
+ padding:28px;
+ border-radius:22px;
+ text-align:center;
+ box-shadow:0 12px 40px rgba(0,0,0,.18);
+ animation: popScale .25s ease;
+}
+
+.goal-pop-emoji{
+ font-size:44px;
+ margin-bottom:8px;
+}
+
+.goal-pop-title{
+ font-size:20px;
+ font-weight:700;
+ margin-bottom:6px;
+}
+
+.goal-pop-text{
+ opacity:.75;
+ font-size:14px;
+}
+
+@keyframes popScale{
+ from{transform:scale(.85);opacity:0}
+ to{transform:scale(1);opacity:1}
+}
+
+@keyframes fadeIn{
+ from{opacity:0}
+ to{opacity:1}
+}
+
+.card.compact label{
+ font-size:12px;
+ opacity:.7;
+ margin-bottom:4px;
+ display:block;
+}
+
+.card.compact input,
+.card.compact select,
+.card.compact textarea{
+ font-size:14px;
+ padding:10px;
+}
+
+/* ===== Mobile Field Polish ===== */
+
+.card.compact input,
+.card.compact select,
+.card.compact textarea{
+ width:100%;
+ margin-top:4px;
+}
+
+/* engeres vertical spacing */
+
+.card.compact{
+ padding:12px 14px;
+}
+
+/* 2-Spalten Datum sauber */
+
+.row2{
+ display:flex;
+ gap:10px;
+}
+
+.row2 > div{
+ flex:1;
+}
+
+/* iOS Touch */
+
+input, select, textarea, button{
+ -webkit-appearance:none;
+}
+
+.card.compact label{
+ font-size:11px;
+ opacity:.6;
+ letter-spacing:.3px;
+}
+
+.card.compact + button.primary{
+ margin-top:8px;
+}
+
+.row2{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:10px;
+}
+
+.card.compact{
+ padding:12px 14px;
+}
+
+.card.compact input,
+.card.compact select,
+.card.compact textarea{
+ font-size:14px;
+ padding:9px;
+}
+
+.card.compact label{
+ font-size:12px;
+ opacity:.65;
+ margin:6px 0 4px;
+}
+
+.moodBars{
+ display:flex;
+ align-items:flex-end;
+ gap:8px;
+ height:120px;
+}
+
+.moodBarWrap{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ gap:6px;
+}
+
+.moodBar{
+ width:18px;
+ border-radius:8px;
+ background:linear-gradient(
+ 180deg,
+ #7ecfc0,
+ #c8f1e4
+ );
+}
+
+.moodBarEmoji{
+ font-size:14px;
+}
+
+.heatGrid{
+ display:grid;
+ grid-template-columns:repeat(7,1fr);
+ gap:6px;
+}
+
+.heatCell{
+ width:100%;
+ padding-top:100%;
+ border-radius:6px;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+ outline:none;
+ border-color:#7ecfc0;
+ box-shadow:0 0 0 3px rgba(126,207,192,.15);
+}
+
+/* ===== ICON PICKER ===== */
+
+.iconGrid{
+ display:grid;
+ grid-template-columns:repeat(6,1fr);
+ gap:10px;
+ margin:12px 0;
+}
+
+.iconGrid button{
+ background:white;
+ border-radius:14px;
+ padding:12px;
+ border:1px solid #e5e8f0;
+}
+
+.iconGrid svg{
+ width:22px;
+ height:22px;
+}
+
+.iconDisplay{
+ width:42px;
+ height:42px;
+ border-radius:12px;
+ background:#f3f6fb;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+
+.taskIcon{
+ width:64px;
+ height:64px;
+ border-radius:16px;
+ background:#f2f4f8;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+
+.taskIcon svg{
+ width:28px;
+ height:28px;
+ opacity:.85;
+}
+
+.taskIcon.fallback{
+ background:#e5e7ee;
+}
+
+.goalIcon{
+ width:60px;
+ height:60px;
+ border-radius:50%;
+ background:#f3f6fb;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:28px;
+}
+
+.goal-detail-icon{
+ width:160px;
+ height:160px;
+ border-radius:50%;
+ background:#f3f6fb;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:64px;
+ margin:0 auto 14px;
+}
+
+/* ===== Icon Picker ===== */
+
+.iconSearch{
+ width:100%;
+ padding:10px;
+ border-radius:12px;
+ border:1px solid #e3e6ef;
+ margin-bottom:10px;
+ font-size:14px;
+}
+
+.iconGrid{
+ display:grid;
+ grid-template-columns:repeat(6,1fr);
+ gap:10px;
+ max-height:260px;
+ overflow:auto;
+}
+
+.iconBtn{
+ padding:10px;
+ border-radius:14px;
+ background:#f3f5fa;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ cursor:pointer;
+ transition:.15s;
+ font-size:18px;
+}
+
+.iconBtn:hover{
+ background:#e8ecf7;
+ transform:scale(1.08);
+}
+
+.iconPreview{
+ display:flex;
+ align-items:center;
+ gap:12px;
+ background:#f6f8fc;
+ padding:10px;
+ border-radius:14px;
+ margin-bottom:12px;
+ font-size:15px;
 }

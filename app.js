@@ -1,6 +1,9 @@
 const app = document.getElementById("app")
 
-// ========= helpers =========
+function cleanupOverlays(){
+ document.querySelectorAll(".modal").forEach(e=>e.remove())
+ document.querySelectorAll(".breath-overlay").forEach(e=>e.remove())
+}
 
 function uid(){return "id_"+Date.now()+"_"+Math.floor(Math.random()*9999)}
 
@@ -10,6 +13,110 @@ function load(k,f){
 }
 
 function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+
+// ======================
+// ICON SYSTEM
+// ======================
+
+let pickedIcon = null
+
+function openIconPicker(onPick){
+
+ const modal = document.createElement("div")
+ modal.className = "modal"
+
+ modal.innerHTML = `
+ <div class="modal-box">
+
+   <h3>Icon wählen</h3>
+
+   <div class="iconPreview">
+     Vorschau:
+     <i id="iconPreviewIcon" data-lucide="circle"></i>
+   </div>
+
+   <input
+     class="iconSearch"
+     placeholder="Icon suchen..."
+     oninput="filterIcons(this.value)"
+   >
+
+   <div class="iconGrid" id="iconGrid"></div>
+
+   <button onclick="cleanupOverlays()">schließen</button>
+
+ </div>
+ `
+
+ document.body.appendChild(modal)
+
+ window._iconPickCallback = onPick
+
+ renderIconGrid(ICONS)
+
+ setTimeout(()=>lucide.createIcons(),0)
+}
+
+function pickIcon(name){
+
+ // global speichern
+ pickedIcon = name
+
+ // Preview aktualisieren (falls vorhanden)
+ const prev = document.getElementById("iconPreviewIcon")
+ if(prev){
+  prev.setAttribute("data-lucide", name)
+  lucide.createIcons()
+ }
+
+ // Callback ausführen (z.B. Dialog)
+ if(window._iconPickCallback){
+  window._iconPickCallback(name)
+ }
+
+ cleanupOverlays()
+}
+
+function setTaskIcon(name){
+ pickedIcon = name
+ document.getElementById("taskIconPreview").innerHTML =
+  `<i data-lucide="${name}"></i>`
+ lucide.createIcons()
+}
+
+function toggleItemType(){
+
+ const t = document.getElementById("itemType").value
+
+ document.getElementById("itemText").style.display =
+  t==="text" ? "block" : "none"
+
+ document.getElementById("itemLink").style.display =
+  t==="link" ? "block" : "none"
+
+ document.getElementById("itemImg").style.display =
+  t==="image" ? "block" : "none"
+}
+
+function saveItemModal(catId, subId){
+
+ const name = document.getElementById("itemName").value.trim()
+ const type = document.getElementById("itemType").value
+ const text = document.getElementById("itemText").value
+ const link = document.getElementById("itemLink").value
+
+ if(!name){
+  alert("Titel fehlt")
+  return
+ }
+
+ addCategoryItem(catId, subId, {
+  name,
+  type,
+  text,
+  link
+ })
+}
 
 // ======================
 // AFFIRMATION SYSTEM (FINAL)
@@ -103,6 +210,16 @@ function addDays(base, n){
  return d.toISOString().slice(0,10)
 }
 
+function daysBetween(a, b){
+ const d1 = new Date(a)
+ const d2 = new Date(b)
+
+ d1.setHours(0,0,0,0)
+ d2.setHours(0,0,0,0)
+
+ return Math.round((d2 - d1) / 86400000)
+}
+
 function nowHM(){
  const d=new Date()
  return [d.getHours(),d.getMinutes()]
@@ -168,6 +285,8 @@ let panicStep = 1
 
 function saveGoals(){
  save("goals", goals)
+
+render()
 }
 
 function deleteGoal(id){
@@ -233,9 +352,13 @@ const phaseStyle = {
 
 // ========= catalog =========
 
-function addCatalogTask(name,img){
+function addCatalogTask(name, icon){
 
- const t = {id:uid(), name, img}
+ const t = {
+  id: uid(),
+  name,
+  icon: icon || "circle"
+ }
 
  catalog.push(t)
  save("catalog", catalog)
@@ -260,6 +383,7 @@ function deleteCatalogTask(id){
 
 function saveCategories(){
  save("categories", categories)
+render()
 }
 
 function addMetricDef(){
@@ -647,10 +771,15 @@ function addCategoryItem(catId, subId, item){
 
  s.items.push({
   id: uid(),
-  ...item
+  name: item.name || "",
+  text: item.text || "",
+  link: item.link || "",
+  img: null   // 🔥 BILDER AUS
  })
 
  save("categories", categories)
+
+ cleanupOverlays()
  openItems(catId, subId)
 }
 
@@ -712,10 +841,6 @@ function deletePlan(id){
 }
 
 // ========= interval logic =========
-
-function daysBetween(a,b){
- return Math.floor((new Date(b)-new Date(a))/(86400000))
-}
 
 function planActiveToday(p){
 
@@ -1086,20 +1211,11 @@ function taskCard(inst){
 
  d.innerHTML=`
 
-${inst.task && inst.task.img
- ? `<img src="${inst.task.img}"
-    style="
-      width:64px;
-      height:64px;
-      border-radius:50%;
-      object-fit:cover;
-    ">`
- : `<div style="
-      width:64px;
-      height:64px;
-      border-radius:50%;
-      background:#ddd">
+${inst.task?.icon
+ ? `<div class="taskIcon">
+      <i data-lucide="${inst.task.icon}"></i>
     </div>`
+ : `<div class="taskIcon fallback"></div>`
 }
 
 <div class="task-main" style="flex:1;margin-left:12px">
@@ -1154,6 +1270,8 @@ if(p?.storageLink){
   main.onclick = () => openStorageFromTask(p.storageLink)
  }
 }
+
+setTimeout(()=>lucide.createIcons(), 0)
 
  return d
 }
@@ -1337,15 +1455,9 @@ function renderCatalog(){
   c.innerHTML = `
   <div style="display:flex;align-items:center;gap:12px">
 
-    ${t.img
-      ? `<img src="${t.img}"
-         style="width:60px;height:60px;border-radius:50%;object-fit:cover">`
-      : `<div style="
-         width:60px;
-         height:60px;
-         border-radius:50%;
-         background:#ddd"></div>`
-    }
+    <div class="taskIcon">
+ <i data-lucide="${t.icon || 'circle'}"></i>
+</div>
 
     <div style="flex:1">
       <strong>${t.name}</strong>
@@ -1363,6 +1475,8 @@ function renderCatalog(){
   app.appendChild(c)
  })
 
+lucide.createIcons()
+
 }
 
 function newCatalogTask(){
@@ -1370,41 +1484,18 @@ function newCatalogTask(){
  const name = prompt("Task Name")
  if(!name) return
 
- const input = document.createElement("input")
- input.type = "file"
- input.accept = "image/*"
- input.style.display = "none"
+ openIconPicker(icon => {
 
- // 🔥 WICHTIG für Safari / iOS
- document.body.appendChild(input)
+  catalog.push({
+    id: uid(),
+    name,
+    icon: icon
+  })
 
- input.onchange = e => {
+  save("catalog", catalog)
+  renderCatalog()
 
-  if(!e.target.files.length){
-   addCatalogTask(name,null)
-   input.remove()
-   return
-  }
-
-  const file = e.target.files[0]
-
-  const r = new FileReader()
-
-  r.onloadend = ()=>{
-   addCatalogTask(name, r.result)
-   input.remove()
-  }
-
-  r.onerror = ()=>{
-   alert("Bild konnte nicht gelesen werden")
-   addCatalogTask(name,null)
-   input.remove()
-  }
-
-  r.readAsDataURL(file)
- }
-
- input.click()
+ })
 }
 
 // ========= GOALS =========
@@ -1423,9 +1514,9 @@ function renderGoals(){
 
  <div style="display:flex;gap:8px">
 
-  <button class="primary" onclick="openGoalCreate()">
-    Neues Ziel +
-  </button>
+  <button onclick="openGoalWizard()">
+ Neues Ziel +
+</button>
 
   <button onclick="renderGoalsArchive()">
     📂 Archiv
@@ -1494,16 +1585,9 @@ d.className = "goal-bubble" + (percent>=100 ? " done" : "")
           background:conic-gradient(${color} var(--p), #e9ecf5 0);
         ">
 
-     ${g.img
-       ? `<img src="${g.img}">`
-       : `<div style="
-           width:60px;
-           height:60px;
-           border-radius:50%;
-           background:#ddd;
-           z-index:2"></div>`
-     }
-
+     <div class="goalIcon">
+ <i data-lucide="${g.icon || 'target'}"></i>
+</div>
     
    </div>
 
@@ -1542,9 +1626,9 @@ function openGoalDetail(id){
 
  <div class="card goal-detail">
 
-   ${g.img ? `
-   <img src="${g.img}" class="goal-detail-img">
-   ` : ""}
+<div class="goal-detail-icon">
+ <i data-lucide="${g.icon || 'target'}"></i>
+</div>
 
 ${(()=>{
  const overdue =
@@ -1705,11 +1789,9 @@ function renderPlanDialog(filter){
   d.innerHTML = `
 <div style="display:flex;align-items:center;gap:12px">
 
-${t.img
- ? `<img src="${t.img}"
-    style="width:52px;height:52px;border-radius:50%;object-fit:cover">`
- : ""
-}
+<div class="taskIcon">
+ <i data-lucide="${t.icon || 'circle'}"></i>
+</div>
 
 <div style="flex:1">
   <strong>${t.name}</strong>
@@ -1724,6 +1806,9 @@ ${t.img
 
     box.appendChild(d)
   })
+
+lucide.createIcons()
+
 }
 // ========= CREATE TASK FROM PLAN DIALOG =========
 
@@ -1733,45 +1818,56 @@ function renderCreateTask(){
  <h1>Neuer Task ✅</h1>
 
  <div class="card">
+
    <input id="newTaskName" placeholder="Task Name">
-   <input type="file" id="newTaskImg" accept="image/*">
+
+   <div id="taskIconPreview"
+     style="font-size:28px;margin-top:12px">
+     <i data-lucide="circle"></i>
+   </div>
+
+   <button onclick="openIconPicker(setTaskIcon)">
+     Icon wählen
+   </button>
+
  </div>
 
- <button class="primary" onclick="saveNewTaskFromDialog()">
-   Speichern & Planen
+ <button class="primary"
+  onclick="saveNewTaskFromDialog()">
+  Speichern & Planen
  </button>
 
  <button onclick="openPlanDialog()">⬅ Zurück</button>
  `
+
+ lucide.createIcons()
 }
 
+function savePlanForm(taskId){
 
-function saveNewTaskFromDialog(){
+ const time = document.getElementById("planTime").value
+ const interval = document.getElementById("planInterval").value
+ const everyX = parseInt(
+  document.getElementById("everyXInput")?.value || 1,10
+ )
 
- const name = document.getElementById("newTaskName").value
- const file = document.getElementById("newTaskImg").files[0]
+ const startDate =
+  document.getElementById("planDate").value || todayISO()
 
- if(!name){
-  alert("Name fehlt")
-  return
- }
+ plans.push({
+  id: uid(),
+  taskId,
+  times: [time],
+  interval,
+  everyX,
+  start: startDate,
+  success: document.getElementById("planStreak")?.checked || false
+ })
 
- if(!file){
-  const id = uid()
-  catalog.push({id,name,img:null})
-  save("catalog",catalog)
-  openPlanForm(id)
-  return
- }
+ save("plans", plans)
 
- const r = new FileReader()
- r.onload = ()=>{
-   const id = uid()
-   catalog.push({id,name,img:r.result})
-   save("catalog",catalog)
-   openPlanForm(id)
- }
- r.readAsDataURL(file)
+cleanupOverlays()
+render()
 }
 
 // ========= ROUTER =========
@@ -1782,7 +1878,23 @@ document.querySelectorAll(".tabbar button").forEach(b=>{
  b.onclick=()=>{page=b.dataset.page; render()}
 })
 
+let pickedGoalIcon = "target"
+
+function pickGoalIcon(name){
+ pickedGoalIcon = name
+
+ const p = document.getElementById("goalIconPreview")
+ if(p){
+  p.innerHTML = `<i data-lucide="${name}"></i>`
+  lucide.createIcons()
+ }
+}
+
 function render(){
+
+ // 🔥 UI-Blocker Cleanup (Modal / Overlay Reste entfernen)
+ document.querySelectorAll(".modal, .breath-overlay, .goal-pop")
+  .forEach(e => e.remove())
 
  if(page==="home") renderHome()
  else if(page==="daily") renderDaily()
@@ -1862,31 +1974,12 @@ function toggleMetricRepeatBox(){
 }
 
 function closeModal(){
- document.querySelector(".modal")?.remove()
-}
 
-function savePlanForm(taskId){
+ document
+  .querySelectorAll(".modal")
+  .forEach(m => m.remove())
 
- const time
- = document.getElementById("planTime").value
- const interval = document.getElementById("planInterval").value
- const everyX = parseInt(document.getElementById("everyXInput")?.value || 1,10)
-
-const startDate = document.getElementById("planDate").value || todayISO()
-
-plans.push({
- id: uid(),
- taskId,
- times: [time],
- interval,
- everyX,
- start: startDate,
- success: document.getElementById("planStreak")?.checked || false
-})
-
- save("plans",plans)
- closeModal()
- render()
+ document.body.style.pointerEvents = "auto"
 }
 
 // ========= GOAL CREATE =========
@@ -1894,78 +1987,315 @@ plans.push({
 function openGoalCreate(){
 
  app.innerHTML = `
- <h1>Neues Ziel ⭐</h1>
 
- <div class="card">
-  <input id="goalName" placeholder="Zielname">
+<h1>Neues Ziel 🌱</h1>
 
-<input type="number" id="goalTarget"
- placeholder="Zielanzahl" value="10">
+<div class="card compact">
 
-<label>Startdatum</label>
-<input type="date" id="goalStart" value="${todayISO()}">
+<label>Ziel</label>
+<input id="goalName"
+ placeholder="z.B. 10x Sport">
 
-<label>Messart</label>
-<select id="goalMode">
- <option value="total">gesamt bis Zieldatum</option>
- <option value="week">pro Woche</option>
- <option value="month">pro Monat</option>
-</select>
+<label>Beschreibung</label>
+<textarea id="goalWhy"
+ rows="2"
+ placeholder="optional"></textarea>
 
-<label>Zieldatum</label>
-<input type="date" id="goalDue">
-
-<textarea id="goalWhy" placeholder="Warum ist dir dieses Ziel wichtig?"></textarea>
-
-<textarea id="goalNote" placeholder="Notizen"></textarea>
-
-  <select id="goalTask">
-   <option value="">Task verknüpfen (optional)</option>
-   ${catalog.map(t=>
-     `<option value="${t.id}">${t.name}</option>`
-   ).join("")}
-  </select>
-
-<label>Metric verknüpfen (optional)</label>
-<select id="goalMetricKey">
- <option value="">keine Metric</option>
- ${metricDefs.map(m=>
-   `<option value="${m.key}">${m.label}</option>`
- ).join("")}
-</select>
-
-<input id="goalMetricTarget"
- type="number"
- placeholder="Metric Zielwert">
-
-<select id="goalMetricMode">
- <option value="gte">größer/gleich Ziel</option>
- <option value="lte">kleiner/gleich Ziel</option>
-</select>
-
-<label>Metric Wiederholung</label>
-<select id="goalMetricRepeat" onchange="toggleMetricRepeatBox()">
- <option value="once">einmalig</option>
- <option value="daily">täglich</option>
- <option value="everyX">alle X Tage</option>
-</select>
-
-<div id="goalMetricEveryXBox" style="display:none">
- <input id="goalMetricEveryX"
-  type="number"
-  placeholder="X Tage">
 </div>
 
-  <input type="file" id="goalImg" 
-accept="image/*">
+
+<div class="card compact">
+
+<div class="row2">
+
+ <div>
+  <label>Start ab</label>
+  <input id="goalStart" type="date">
  </div>
 
- <button class="primary" onclick="saveGoalCreate()">
-  Speichern
- </button>
+ <div>
+  <label>Bis</label>
+  <input id="goalDue" type="date">
+ </div>
 
- <button onclick="renderGoals()">⬅ Zurück</button>
- `
+</div>
+
+</div>
+
+
+<div class="card compact">
+
+<label>Zielart</label>
+<select id="goalMode">
+ <option value="count">Anzahl Aktionen</option>
+ <option value="metric">Metric Wert</option>
+</select>
+
+<label>Anzahl / Zielwert</label>
+<input id="goalTarget"
+ type="number"
+ placeholder="z.B. 10">
+
+<label>Rhythmus</label>
+<select id="goalRhythm">
+ <option value="any">ohne festen Rhythmus</option>
+ <option value="daily">täglich</option>
+ <option value="weekly">wöchentlich</option>
+ <option value="until">bis Zieldatum</option>
+
+</select>
+
+</div>
+
+<button onclick="openIconPicker(icon=>{
+ pickedGoalIcon = icon
+ document.getElementById("goalIconPreview").innerHTML =
+   '<i data-lucide="'+icon+'"></i>'
+ lucide.createIcons()
+})">
+Icon wählen
+</button>
+
+<div id="goalIconPreview"></div>
+
+<div class="card compact">
+
+<label>Task verknüpfen (optional)</label>
+<select id="goalTask">
+<option value="">—</option>
+${
+ catalog.map(t =>
+  `<option value="${t.id}">${t.name}</option>`
+ ).join("")
+}
+</select>
+
+<label>Metric verknüpfen (optional)</label>
+<select id="goalMetric">
+<option value="">—</option>
+${
+ metricDefs.map(m =>
+  `<option value="${m.key}">
+   ${m.label}
+  </option>`
+ ).join("")
+}
+</select>
+
+</div>
+
+
+<button class="primary"
+ onclick="saveGoalCreate()">
+Speichern
+</button>
+
+<button onclick="renderGoals()">
+Abbrechen
+</button>
+
+
+`
+}
+
+// ======================
+// GOAL WIZARD
+// ======================
+
+let goalDraft = {}
+
+function openGoalWizard(){
+ goalDraft = {}
+ goalWizardStep1()
+}
+
+
+// ---------- STEP 1 ----------
+
+function goalWizardStep1(){
+
+ app.innerHTML = `
+
+<h1>Ziel 🌱</h1>
+
+<div class="card compact">
+
+<label>Ziel</label>
+<input id="wizName"
+ placeholder="z.B. 10x Sport">
+
+<label>Beschreibung</label>
+<textarea id="wizWhy"
+ rows="2"
+ placeholder="optional"></textarea>
+
+</div>
+
+<button class="primary"
+ onclick="goalWizardStep2()">
+Weiter
+</button>
+
+<button onclick="renderGoals()">
+Abbrechen
+</button>
+
+`
+}
+
+
+// ---------- STEP 2 ----------
+
+function goalWizardStep2(){
+
+ goalDraft.name = wizName.value.trim()
+ goalDraft.why = wizWhy.value || ""
+
+ if(!goalDraft.name){
+  alert("Ziel fehlt")
+  return
+ }
+
+ app.innerHTML = `
+
+<h1>Zeitraum & Zielwert</h1>
+
+<div class="card compact">
+
+<div class="row2">
+
+ <div>
+  <label>Start</label>
+  <input id="wizStart" type="date"
+   value="${todayISO()}">
+ </div>
+
+ <div>
+  <label>Bis</label>
+  <input id="wizDue" type="date">
+ </div>
+
+</div>
+
+</div>
+
+<div class="card compact">
+
+<label>Zielart</label>
+<select id="wizMode">
+ <option value="count">Anzahl Aktionen</option>
+ <option value="metric">Metric Wert</option>
+</select>
+
+<label>Anzahl / Zielwert</label>
+<input id="wizTarget"
+ type="number"
+ placeholder="z.B. 10">
+
+<label>Rhythmus</label>
+<select id="wizRhythm">
+ <option value="any">ohne festen Rhythmus</option>
+ <option value="daily">täglich</option>
+ <option value="weekly">wöchentlich</option>
+ <option value="until">bis Zieldatum</option>
+</select>
+
+</div>
+
+<button class="primary"
+ onclick="goalWizardStep3()">
+Weiter
+</button>
+
+<button onclick="goalWizardStep1()">
+⬅ zurück
+</button>
+
+`
+}
+
+
+// ---------- STEP 3 ----------
+
+function goalWizardStep3(){
+
+ goalDraft.start = wizStart.value || todayISO()
+ goalDraft.due = wizDue.value || null
+ goalDraft.mode = wizMode.value
+ goalDraft.target = parseInt(wizTarget.value,10) || 1
+ goalDraft.rhythm = wizRhythm.value || "any"
+
+ app.innerHTML = `
+
+<h1>Verknüpfungen</h1>
+
+<div class="card compact">
+
+<label>Task (optional)</label>
+<select id="wizTask">
+<option value="">—</option>
+${
+ catalog.map(t =>
+  `<option value="${t.id}">${t.name}</option>`
+ ).join("")
+}
+</select>
+
+<label>Metric (optional)</label>
+<select id="wizMetric">
+<option value="">—</option>
+${
+ metricDefs.map(m =>
+  `<option value="${m.key}">
+   ${m.label}
+  </option>`
+ ).join("")
+}
+</select>
+
+</div>
+
+<button class="primary"
+ onclick="finishGoalWizard()">
+Ziel speichern
+</button>
+
+<button onclick="goalWizardStep2()">
+⬅ zurück
+</button>
+
+`
+}
+
+
+// ---------- FINISH ----------
+
+function finishGoalWizard(){
+
+ const goal = {
+
+  id: uid(),
+
+  name: goalDraft.name,
+  why: goalDraft.why,
+
+  start: goalDraft.start,
+  due: goalDraft.due,
+
+  mode: goalDraft.mode,
+  target: goalDraft.target,
+  rhythm: goalDraft.rhythm,
+
+  taskId: wizTask.value || null,
+  metricKey: wizMetric.value || null,
+
+  img: null
+ }
+
+ goals.push(goal)
+ save("goals", goals)
+
+ renderGoals()
 }
 
 function toggleAffirmations(off){
@@ -1976,41 +2306,34 @@ function toggleAffirmations(off){
 
 function saveGoalCreate(){
 
- function finishSave(imgData){
+ const goal = {
 
-  const goal = {
-   id: uid(),
-   name: goalName.value.trim(),
-   target: parseInt(goalTarget.value,10) || 1,
-   mode: goalMode.value,
-   due: goalDue.value || null,
-   why: goalWhy.value || "",
-   note: goalNote.value || "",
-   taskId: goalTask.value || null,
-   start: goalStart.value || todayISO(),
-   img: imgData || null,
+  id: uid(),
 
-   metricKey: goalMetricKey.value || null,
-   metricTarget: parseFloat(goalMetricTarget.value) || null,
-   metricMode: goalMetricMode.value || null,
-   metricRepeat: goalMetricRepeat.value || "once",
-   metricEveryX: parseInt(goalMetricEveryX.value,10) || null
-  }
+  name: goalName.value.trim(),
 
-  addGoal(goal)
-  renderGoals()
+  why: goalWhy.value || "",
+
+  start: goalStart.value || todayISO(),
+  due: goalDue.value || null,
+
+  mode: goalMode.value,
+  target: parseInt(goalTarget.value,10) || 1,
+
+  rhythm: goalRhythm.value || "any",
+
+  taskId: goalTask.value || null,
+  metricKey: goalMetric.value || null,
+
+icon: pickedGoalIcon || "target",
+
  }
 
- const file =
-  document.getElementById("goalImg").files[0]
+ goals.push(goal)
 
-if(file){
- const reader = new FileReader()
- reader.onloadend = e => finishSave(e.target.result)
- reader.readAsDataURL(file)
-} else {
-  finishSave(null)
- }
+ save("goals", goals)
+
+ renderGoals()
 }
 
 // ===== HARD RESET BUTTON =====
@@ -2197,13 +2520,28 @@ function renameMetric(key,newLabel){
 
 function showGoalPop(){
 
- const d=document.createElement("div")
- d.className="goal-pop"
- d.innerHTML="🥳👏✨<br>Du kannst stolz auf dich sein!"
+ const d = document.createElement("div")
+ d.className = "goal-pop"
+
+ d.innerHTML = `
+ <div class="goal-pop-box">
+
+  <div class="goal-pop-emoji">⭐</div>
+
+  <div class="goal-pop-title">
+   Ziel erreicht
+  </div>
+
+  <div class="goal-pop-text">
+   Das hast du dir verdient 🤍
+  </div>
+
+ </div>
+ `
 
  document.body.appendChild(d)
 
- setTimeout(()=>d.remove(), 2200)
+ setTimeout(()=>d.remove(), 2600)
 }
 
  function createTaskFromCategoryItem(name, catId, subId, itemId){
@@ -2392,39 +2730,6 @@ function drawMetricChart(arr){
 
 }
 
- // ---------- Hintergrund Grid ----------
-
- ctx.globalAlpha = 0.15
- ctx.lineWidth = 1
-
- for(let i=0;i<5;i++){
-   const y = pad + (h-pad*2) * (i/4)
-   ctx.beginPath()
-   ctx.moveTo(pad,y)
-   ctx.lineTo(w-pad,y)
-   ctx.stroke()
- }
-
- ctx.globalAlpha = 1
-
- // ---------- Linie ----------
-
- ctx.beginPath()
-
- values.forEach((v,i)=>{
-
-  const px = pad + i/(values.length-1)*(w-pad*2)
-  const py = h-pad - ((v-min)/range)*(h-pad*2)
-
-  if(i===0) ctx.moveTo(px,py)
-  else ctx.lineTo(px,py)
- })
-
- ctx.lineWidth = 3
- ctx.lineJoin = "round"
- ctx.lineCap = "round"
- ctx.stroke()
-
  // ---------- Punkte ----------
 
 
@@ -2497,10 +2802,11 @@ function saveStoragePlan(storage){
   success:false
  })
 
- save("plans",plans)
+save("plans",plans)
 
- closeModal()
- render()
+closeModal()
+render()
+
 }
 
 function openStorageFromTask(link){
@@ -2523,8 +2829,7 @@ function openStorageFromTask(link){
  <h3>${item.name}</h3>
 
  ${item.type==="text" ? item.text : ""}
- ${item.type==="link" ? `<a href="${item.url}" target="_blank">${item.url}</a>` : ""}
- ${item.type==="image" ? `<img src="${item.data}" width="200">` : ""}
+ ${item.type==="link" ? `<a href="${item.link}" target="_blank">${item.link}</a>` : ""}
 
  <button onclick="closeModal()">schließen</button>
 
@@ -2545,9 +2850,23 @@ function openGoalEdit(id){
 
  openGoalCreate()
 
+pickedGoalIcon = g.icon || "target"
+
+setTimeout(()=>{
+ const p = document.getElementById("goalIconPreview")
+ if(p){
+  p.innerHTML = `<i data-lucide="${pickedGoalIcon}"></i>`
+  lucide.createIcons()
+ }
+}, 0)
+
  goalName.value = g.name
- goalTarget.value = g.target
- goalMode.value = g.mode
+ goalMode.value = g.mode || "count"
+goalTarget.value = g.target || 1
+
+if(g.rhythm){
+ document.getElementById("goalRhythm").value = g.rhythm
+}
  goalDue.value = g.due || ""
  goalWhy.value = g.why || ""
  goalNote.value = g.note || ""
@@ -2561,36 +2880,25 @@ function openGoalEdit(id){
 
  btn.onclick = () => {
 
-  function finishUpdate(imgData){
+  g.name = goalName.value.trim()
+  g.target = parseInt(goalTarget.value,10) || 1
+  g.mode = goalMode.value
+  g.due = goalDue.value || null
+  g.why = goalWhy.value || ""
+  g.note = goalNote.value || ""
+  g.taskId = goalTask.value || null
+  g.start = goalStart.value || todayISO()
 
-   g.name = goalName.value.trim()
-   g.target = parseInt(goalTarget.value,10) || 1
-   g.mode = goalMode.value
-   g.due = goalDue.value || null
-   g.why = goalWhy.value || ""
-   g.note = goalNote.value || ""
-   g.taskId = goalTask.value || null
-   g.start = goalStart.value || todayISO()
+  // 🔥 Bildspeicherung deaktiviert
+  // g.img bleibt unverändert
 
-   if(imgData){
-    g.img = imgData
-   }
+  // Icon speichern
+  g.icon = pickedGoalIcon || g.icon || "target"
 
-   saveGoals()
-   openGoalDetail(id)
-  }
-
-  const file =
-   document.getElementById("goalImg").files[0]
-
-  if(file){
-   const reader = new FileReader()
-   reader.onloadend = e => finishUpdate(e.target.result)
-   reader.readAsDataURL(file)
-  } else {
-   finishUpdate(null)
-  }
-
+  saveGoals()
+  cleanupOverlays()
+  render()
+  openGoalDetail(id)
  }
 
 }
@@ -2686,12 +2994,7 @@ function openMoodInsights(){
 
  if(!total){
   app.innerHTML = `
-  <h1>Deine Mood Muster 🌦️</h1>
-
-  <div class="analysisInfo">
-   Diese Übersicht zeigt Tendenzen — keine Bewertung.
-   Sie basiert nur auf deinen Einträgen.
-  </div>
+  <h1>Deine Mood Muster</h1>
 
   <button onclick="renderSettings()">⬅ zurück</button>
 
@@ -2701,27 +3004,25 @@ function openMoodInsights(){
  }
 
  const counts = {}
-
  moods.forEach(m=>{
   counts[m.emoji] = (counts[m.emoji]||0)+1
  })
 
- const best = Object.entries(counts)
-  .sort((a,b)=>b[1]-a[1])[0]
+ const best =
+  Object.entries(counts)
+   .sort((a,b)=>b[1]-a[1])[0]
 
  app.innerHTML = `
- <h1>Deine Mood Muster 🌦️</h1>
-
- <div class="analysisInfo">
-  Diese Analyse zeigt Muster — keine Bewertung.
-  Sie basiert nur auf deinen eigenen Einträgen.
- </div>
+ <h1>Deine Mood Muster</h1>
 
  <button onclick="renderSettings()">⬅ zurück</button>
 
+ ${renderMoodBarChart()}
+ ${renderMoodHeatmap()}
+
  <div class="card moodHero">
   <div class="moodHeroEmoji">${best[0]}</div>
-  <div class="moodHeroText">
+  <div>
    Häufigster Mood<br>
    <span>${best[1]} Einträge</span>
   </div>
@@ -2734,27 +3035,23 @@ function openMoodInsights(){
 
  <div class="card moodClickable"
   onclick="openMoodDistributionDetail()">
-
   <h3>Verteilung</h3>
-
   <div class="moodChipRow">
    ${moodDistributionUI(counts)}
   </div>
-
  </div>
 
-<div class="card moodClickable"
- onclick="openMoodPhaseDetail()">
- <h3>Tageszeit Score</h3>
- Tippen für Details
-</div>
+ <div class="card moodClickable"
+  onclick="openMoodPhaseDetail()">
+  <h3>Tageszeit Muster</h3>
+ </div>
 
-<div class="card moodClickable"
- onclick="openMoodTrendDetail()">
- <h3>Wochen Trend</h3>
- Tippen für Details
-</div>
-`}
+ <div class="card moodClickable"
+  onclick="openMoodTrendDetail()">
+  <h3>Wochen Trend</h3>
+ </div>
+ `
+}
 
 function moodPhaseBlock(){
 
@@ -2822,6 +3119,59 @@ function avgMoodScore(arr){
  return vals.reduce((a,b)=>a+b,0)/vals.length
 }
 
+function renderMoodHeatmap(){
+
+ const last = moods.slice(-28)
+ if(!last.length) return ""
+
+ return `
+ <div class="card">
+
+ <h3>Mood Heatmap</h3>
+
+ <div class="heatGrid">
+
+ ${last.map(m=>{
+
+  const s = moodScore[m.emoji] || 3
+
+  return `
+   <div class="heatCell"
+     style="background:${moodColor(s)}"
+     title="${new Date(m.date).toLocaleDateString('de-DE')} • ${m.emoji}">
+   </div>
+  `
+
+ }).join("")}
+
+ </div>
+
+ ${renderHeatLegend()}
+
+ </div>
+ `
+}
+
+function renderHeatLegend(){
+
+ return `
+ <div style="
+   margin-top:10px;
+   font-size:12px;
+   opacity:.7;
+   display:flex;
+   justify-content:space-between;
+   gap:6px">
+
+   <span>niedrig</span>
+   <span>leicht</span>
+   <span>neutral</span>
+   <span>gut</span>
+
+ </div>
+ `
+}
+
 function openMetricPresetPicker(){
 
  const modal = document.createElement("div")
@@ -2873,8 +3223,7 @@ function addMetricPreset(key){
  metricDefs.push({...p})
  save("metricDefs", metricDefs)
 
- closeModal()
- renderSettings()
+ closeModal()   // ✅ kein renderSettings
 }
 
 function openCustomMetricDialog(){
@@ -2911,12 +3260,10 @@ function openCustomMetricDialog(){
 function saveCustomMetric(){
 
  const name =
-  document.getElementById("customMetricName")
-  .value.trim()
+  document.getElementById("customMetricName").value.trim()
 
  const unit =
-  document.getElementById("customMetricUnit")
-  .value.trim()
+  document.getElementById("customMetricUnit").value.trim()
 
  if(!name){
   alert("Name fehlt")
@@ -2931,16 +3278,11 @@ function saveCustomMetric(){
   return
  }
 
- metricDefs.push({
-  key,
-  label:name,
-  unit
- })
+ metricDefs.push({key,label:name,unit})
 
  save("metricDefs", metricDefs)
 
  closeModal()
- renderSettings()
 }
 
 function deleteMetricDef(key){
@@ -3047,7 +3389,10 @@ function closePanicOverlay(){
   breathTimer = null
  }
 
- document.querySelector(".breath-overlay")?.remove()
+ const box = document.getElementById("panicOverlay")
+ if(box) box.remove()
+
+ document.body.style.pointerEvents = "auto"
 }
 
 function renderPanicStep(){
@@ -3158,6 +3503,8 @@ if(panicStep === 2){
   <button class="primary" onclick="panicNext()">weiter</button>
   <button onclick="panicBack()">zurück</button>
 
+<button onclick="closePanicOverlay()">abbrechen</button>
+
  </div>`
  return
 }
@@ -3198,6 +3545,7 @@ if(panicStep === 3){
 
   <button class="primary" onclick="panicNext()">weiter</button>
   <button onclick="panicBack()">zurück</button>
+<button onclick="closePanicOverlay()">abbrechen</button>
 
  </div>`
  return
@@ -3244,6 +3592,7 @@ function panicBack(){
 function togglePanicInfo(){
  const el = document.getElementById("panicInfoText")
  if(!el) return
+
  el.style.display =
   el.style.display === "block" ? "none" : "block"
 }
@@ -3316,29 +3665,66 @@ function openStateCheckOverlay(){
  box.style.display = "flex"
 
  box.innerHTML = `
- <div class="breath-box">
+<div class="breath-box">
 
-  <h3>Wie ist deine Energie gerade?</h3>
+ <h3>Wie ist deine Energie gerade?</h3>
 
-  <div style="display:flex;flex-direction:column;gap:12px">
+ <div style="display:flex;flex-direction:column;gap:12px">
 
-   <button class="primary"
-    onclick="handleEnergyChoice('low')">
-    niedrig
-   </button>
+  <button class="primary"
+   onclick="handleEnergyChoice('low')">
+   niedrig
+  </button>
 
-   <button class="primary"
-    onclick="handleEnergyChoice('mid')">
-    mittel
-   </button>
+  <button class="primary"
+   onclick="handleEnergyChoice('mid')">
+   mittel
+  </button>
 
-   <button class="primary"
-    onclick="handleEnergyChoice('ok')">
-    ok
-   </button>
+  <button class="primary"
+   onclick="handleEnergyChoice('ok')">
+   ok
+  </button>
 
-  </div>
+ </div>
 
+ <button style="margin-top:16px"
+  onclick="closePanicOverlay(); renderHome()">
+  schließen
+ </button>
+
+</div>
+`
+}
+
+function renderMoodBarChart(){
+
+ const last = moods.slice(-7)
+
+ if(!last.length){
+  return `<div class="card">Noch keine Daten</div>`
+ }
+
+ return `
+ <div class="card">
+ <h3>7 Tage Trend</h3>
+
+ <div class="moodBars">
+
+ ${last.map(m=>{
+  const s = moodScore[m.emoji] || 3
+  return `
+   <div class="moodBarWrap">
+    <div class="moodBar"
+     style="height:${s*18}px"></div>
+    <div class="moodBarEmoji">
+     ${m.emoji}
+    </div>
+   </div>
+  `
+ }).join("")}
+
+ </div>
  </div>
  `
 }
@@ -3357,18 +3743,34 @@ function handleEnergyChoice(level){
 
 function runMiniAction(type){
 
- const box = document.getElementById("panicOverlay")
+ let box = document.getElementById("panicOverlay")
+
+ if(!box){
+  box = document.createElement("div")
+  box.className = "breath-overlay"
+  box.id = "panicOverlay"
+  document.body.appendChild(box)
+ }
+
+ box.style.display = "flex"
 
  if(type === "reset"){
+
   box.innerHTML = `
    <div class="breath-box">
     <h3>2-Minuten Reset 🌿</h3>
     Augen schließen — 10 Atemzüge zählen.
     <br><br>
+
     <button class="primary"
      onclick="closePanicOverlay(); triggerAffirmation(); renderHome()">
      fertig
     </button>
+
+    <button onclick="closePanicOverlay(); renderHome()">
+     abbrechen
+    </button>
+
    </div>
   `
   return
@@ -3380,7 +3782,6 @@ function runMiniAction(type){
   return
  }
 
- // continue
  closePanicOverlay()
  renderHome()
 }
@@ -3601,6 +4002,90 @@ function startMiniReset(){
 
 }
 
-function startFocusBlock(){
- alert("8 Minuten Fokusblock gestartet ✨")
+function saveNewTaskFromDialog(){
+
+ const name = document.getElementById("newTaskName").value.trim()
+
+ if(!name){
+  alert("Name fehlt")
+  return
+ }
+
+ const id = uid()
+
+ catalog.push({
+ id,
+ name,
+ icon: pickedIcon || "check"
+})
+
+ save("catalog", catalog)
+
+ cleanupOverlays()
+openPlanForm(id)
 }
+
+///////// ICONS //////
+
+const ICONS = [
+
+ // wellness / body
+ "heart","sparkles","leaf","sun","moon","flower",
+ "droplet","feather","cloud","cloud-rain",
+
+ // movement
+ "activity","dumbbell","bike","footprints",
+ "mountain","waves","stretch-horizontal",
+
+ // yoga / calm
+ "lotus","wind","circle","circle-dot","focus",
+
+ // sport
+ "zap","flame","timer","target","trophy",
+
+ // food
+ "apple","utensils","coffee","cup-soda","salad",
+
+ // home
+ "home","bed","sofa","lamp","bath",
+
+ // cleaning
+ "trash","spray-can","brush","archive","box",
+
+ // shopping
+ "shopping-cart","store","package","credit-card",
+
+ // planning
+ "calendar","check","check-circle","clipboard",
+
+ // mind
+ "brain","book","pen","pencil","bookmark"
+]
+
+
+
+
+
+
+function renderIconGrid(list){
+
+ const grid = document.getElementById("iconGrid")
+ if(!grid) return
+
+ grid.innerHTML = list.map(name=>`
+  <div class="iconBtn"
+    onclick="pickIcon('${name}')">
+    <i data-lucide="${name}"></i>
+  </div>
+ `).join("")
+
+ setTimeout(()=>lucide.createIcons(),0)
+}
+
+function filterIcons(q){
+ q = q.toLowerCase()
+ renderIconGrid(
+  ICONS.filter(x => x.includes(q))
+ )
+}
+
