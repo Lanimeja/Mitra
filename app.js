@@ -1,8 +1,13 @@
-const app = document.getElementById("app")
+let app
+
+let page = "home"
 
 function cleanupOverlays(){
- document.querySelectorAll(".modal").forEach(e=>e.remove())
- document.querySelectorAll(".breath-overlay").forEach(e=>e.remove())
+ document
+  .querySelectorAll(
+   ".modal, .breath-overlay, .goal-pop, .affirmBox"
+  )
+  .forEach(e => e.remove())
 }
 
 function uid(){return "id_"+Date.now()+"_"+Math.floor(Math.random()*9999)}
@@ -14,11 +19,100 @@ function load(k,f){
 
 function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
 
+function goalCreateIconPickHandler(icon){
+
+ pickedGoalIcon = icon
+
+ const prev = document.getElementById("goalIconPreview")
+ if(prev){
+  prev.innerHTML = `<i data-lucide="${icon}"></i>`
+  setTimeout(()=>lucide.createIcons(),0)
+ }
+}
+
 // ======================
 // ICON SYSTEM
 // ======================
 
-let pickedIcon = null
+const iconCatalog = {
+
+ Selfcare: [
+  "heart","sparkles","bath","flower","coffee",
+  "smile","sun","moon","droplet","feather"
+ ],
+
+ Entspannung: [
+  "lotus","leaf","spa","wind","cloud",
+  "sunrise","sunset","waves","flame","sparkles"
+ ],
+
+ Bewegung: [
+  "dumbbell","activity","zap","timer","footprints",
+  "bike","flame","trophy","medal","rocket"
+ ],
+
+ Haushalt: [
+  "home","bed","sofa","utensils","chef-hat",
+  "washing-machine","trash","package","tool","lamp"
+ ],
+
+ Essen: [
+  "apple","carrot","utensils","coffee","cake",
+  "pizza","salad","sandwich","milk","cookie"
+ ],
+
+ Gesundheit: [
+  "brain","heart-pulse","shield","anchor","eye",
+  "lightbulb","compass","message-circle","book","feather"
+ ],
+
+ Leben: [
+  "calendar","clock","map","compass","sun",
+  "cloud","home","users","phone","mail"
+ ],
+
+ Ziele: [
+  "target","flag","trophy","award","star",
+  "rocket","milestone","check-circle","focus","goal"
+ ],
+
+ Erfolg: [
+  "trending-up","bar-chart","award","crown","gem",
+  "star","sparkles","medal","trophy","flag"
+ ],
+
+ Natur: [
+  "leaf","tree","flower","sun","mountain",
+  "waves","cloud","bug","bird","sprout"
+ ]
+
+}
+
+const iconList = Object.values(iconCatalog).flat()
+
+let pickedIcon = null          // für Task / Catalog / allgemeine IconPicker
+let pickedGoalIcon = "target"  // speziell für Goals (mit Default)
+
+const TASK_CATEGORIES = [
+ "selfcare",
+ "bewegung",
+ "haushalt",
+ "essen",
+ "gesundheit",
+ "natur",
+ "erfolg",
+ "ziele"
+]
+
+function categorySelectHTML(id="taskCategory"){
+ return `
+ <select id="${id}">
+  ${TASK_CATEGORIES.map(c =>
+   `<option value="${c}">${c}</option>`
+  ).join("")}
+ </select>
+ `
+}
 
 function openIconPicker(onPick){
 
@@ -52,16 +146,52 @@ function openIconPicker(onPick){
 
  window._iconPickCallback = onPick
 
- renderIconGrid(ICONS)
+ renderIconPickerByCategory()
 
  setTimeout(()=>lucide.createIcons(),0)
 }
 
+function filterIcons(val){
+ renderIconPickerByCategory(val)
+}
+
+function renderIconPickerByCategory(filterText=""){
+
+ const grid = document.getElementById("iconGrid")
+ if(!grid) return
+
+ const q = filterText.toLowerCase()
+
+ grid.innerHTML = Object.entries(iconCatalog).map(([cat,icons])=>{
+
+  const filtered = icons.filter(name =>
+   name.toLowerCase().includes(q)
+  )
+
+  if(!filtered.length) return ""
+
+  return `
+   <div class="iconCategoryTitle">${cat}</div>
+
+   <div class="iconGrid iconCat-${cat}">
+    ${filtered.map(name => `
+      <div class="iconBtn"
+        onclick="pickIcon('${name}')">
+        <i data-lucide="${name}"></i>
+      </div>
+    `).join("")}
+   </div>
+  `
+
+ }).join("")
+
+ lucide.createIcons()
+}
+
 function pickIcon(name){
 
- pickedIcon = name
-
- if(window._iconPickCallback){
+ // nur Callback verwenden
+ if(typeof window._iconPickCallback === "function"){
   window._iconPickCallback(name)
  }
 
@@ -70,8 +200,11 @@ function pickIcon(name){
 
 function setTaskIcon(name){
  pickedIcon = name
- document.getElementById("taskIconPreview").innerHTML =
-  `<i data-lucide="${name}"></i>`
+
+ const el = document.getElementById("taskIconPreview")
+ if(!el) return
+
+ el.innerHTML = `<i data-lucide="${name}"></i>`
  lucide.createIcons()
 }
 
@@ -107,6 +240,8 @@ function saveItemModal(catId, subId){
   text,
   link
  })
+
+ closeModal()
 }
 
 // ======================
@@ -161,6 +296,11 @@ let affirmationState = load("affirmationState", {
  ts: 0
 })
 
+// safety guard gegen kaputtes localStorage
+if(!affirmationState || typeof affirmationState !== "object"){
+ affirmationState = { text:null, ts:0 }
+}
+
 function triggerAffirmation(type="neutral"){
 
  if(settings?.affirmationsOff) return
@@ -176,6 +316,17 @@ function triggerAffirmation(type="neutral"){
  }
 
  save("affirmationState", affirmationState)
+}
+
+function goalIconPickHandler(icon){
+
+ pickedGoalIcon = icon
+
+ const prev = document.getElementById("wizIconPrev")
+ if(prev){
+  prev.innerHTML = `<i data-lucide="${icon}"></i>`
+  lucide.createIcons()
+ }
 }
 
 function getActiveAffirmation(){
@@ -232,10 +383,11 @@ let goals = load("goals",[])
 let categories = load("categories",[])
 
 categories.forEach(c=>{
- if(!c.children) c.children=[]
+ c.children = c.children || []
  c.children.forEach(s=>{
-  if(!s.items) s.items=[]
+  s.items = s.items || []
  })
+
 })
 
 let metrics = load("metrics", {})
@@ -384,7 +536,7 @@ function addMetricDef(){
 
  if(!name) return
 
- const key = name.toLowerCase().replace(/\s+/g,"_")
+const key = name.toLowerCase().replace(/\s+/g, "_")
 
  metricDefs.push({
   key,
@@ -761,12 +913,13 @@ function addCategoryItem(catId, subId, item){
  if(!s) return
 
  s.items.push({
-  id: uid(),
-  name: item.name || "",
-  text: item.text || "",
-  link: item.link || "",
-  img: null   // 🔥 BILDER AUS
- })
+ id: uid(),
+ name: item.name || "",
+ type: item.type || "text",
+ text: item.text || "",
+ link: item.link || "",
+ img: null
+})
 
  save("categories", categories)
 
@@ -1114,7 +1267,7 @@ function scoreLabel(v){
 
  if(v == null) return "—"
 
- if(v >= 4.5) return "sehr stabil 🌤"
+ if(v >= 4.5) return "sehr stabil ☀️"
  if(v >= 3.5) return "ausgeglichen 🌿"
  if(v >= 2.5) return "schwankend 🌫"
  return "belastet 🌧"
@@ -1196,83 +1349,83 @@ const energySuggestions = {
 
 function taskCard(inst){
 
- const d=document.createElement("div")
- d.className="task"+
-(done(inst.instance)?" done":"")
+ const d = document.createElement("div")
 
- d.innerHTML=`
+ const task = inst.task || {}
 
-${inst.task?.icon
- ? `<div class="taskIcon">
-      <i data-lucide="${inst.task.icon}"></i>
-    </div>`
- : `<div class="taskIcon fallback"></div>`
-}
+ d.className =
+  "task cat-" + (task.category || "default") +
+  (done(inst.instance) ? " done" : "")
 
-<div class="task-main" style="flex:1;margin-left:12px">
+ d.innerHTML = `
+
+ <div class="taskIcon">
+   <i data-lucide="${task.icon || 'circle'}"></i>
+ </div>
+
+ <div class="task-main" style="flex:1;margin-left:12px">
 
  ${(()=>{
- const top = getTopStreaks()
- const hit = top.find(x => x[0] === inst.task?.name)
+  const top = getTopStreaks()
+  const hit = top.find(x => x[0] === task.name)
 
- if(!hit){
-  return `<strong>${inst.task?.name||"Task"}</strong>`
- }
+  if(!hit){
+   return `<strong>${task.name||"Task"}</strong>`
+  }
 
- const n = hit[1]
+  const n = hit[1]
 
- const size =
-  n >= 14 ? "11px" :
-  n >= 7  ? "12px" :
-  "13px"
+  const size =
+   n >= 14 ? "11px" :
+   n >= 7  ? "12px" :
+   "13px"
 
- const color =
-  n >= 14 ? "#ff9800" :
-  n >= 7  ? "#ffb300" :
-  "#ffd54f"
+  const color =
+   n >= 14 ? "#ff9800" :
+   n >= 7  ? "#ffb300" :
+   "#ffd54f"
 
- return `
- <strong>${inst.task?.name}</strong>
- <span style="
-   font-size:${size};
-   background:${color};
-   padding:2px 6px;
-   border-radius:10px;
-   margin-left:6px;
- ">
- ⭐${n}
- </span>`
-})()}
-<br>
-  🕒 ${inst.time}
+  return `
+  <strong>${task.name}</strong>
+  <span style="
+    font-size:${size};
+    background:${color};
+    padding:2px 6px;
+    border-radius:10px;
+    margin-left:6px;
+  ">
+  ⭐${n}
+  </span>`
+ })()}
+
+ <br>
+ 🕒 ${inst.time}
  </div>
 
  <button onclick="toggleInstance('${inst.instance}')">✓</button>
  <button onclick="deletePlan('${inst.planId}')">🗑</button>
  `
 
-// Storage-Link nur auf Titelbereich klicken
-const p = plans.find(x=>x.id===inst.planId)
+ const p = plans.find(x=>x.id===inst.planId)
 
-if(p?.storageLink){
- const main = d.querySelector(".task-main")
- if(main){
-  main.style.cursor = "pointer"
-  main.onclick = () => openStorageFromTask(p.storageLink)
+ if(p?.storageLink){
+  const main = d.querySelector(".task-main")
+  if(main){
+   main.style.cursor = "pointer"
+   main.onclick = () => openStorageFromTask(p.storageLink)
+  }
  }
-}
 
-setTimeout(()=>lucide.createIcons(), 0)
+ setTimeout(()=>lucide.createIcons(), 0)
 
  return d
 }
 
 
-
 // ========= HOME =========
 
 function renderHome(){
-
+cleanupOverlays()
  const [greet,phase] = dayPhase()
 
  const inst = instancesForDate(selectedDate).filter(i=>{
@@ -1466,8 +1619,7 @@ function renderCatalog(){
   app.appendChild(c)
  })
 
-lucide.createIcons()
-
+setTimeout(()=>lucide.createIcons(),0)
 }
 
 function newCatalogTask(){
@@ -1475,12 +1627,17 @@ function newCatalogTask(){
  const name = prompt("Task Name")
  if(!name) return
 
+ const category = (prompt(
+  "Kategorie:\nselfcare, bewegung, haushalt, essen, gesundheit, natur, erfolg, ziele"
+ ) || "default").toLowerCase()
+
  openIconPicker(icon => {
 
   catalog.push({
-    id: uid(),
-    name,
-    icon: icon
+   id: uid(),
+   name,
+   icon,
+   category
   })
 
   save("catalog", catalog)
@@ -1527,6 +1684,8 @@ function renderGoals(){
   .forEach(g=>{
     box.appendChild(goalBubble(g))
   })
+setTimeout(()=>lucide.createIcons(),0)
+
 }
 
 function renderGoalsArchive(){
@@ -1570,17 +1729,30 @@ d.className = "goal-bubble" + (percent>=100 ? " done" : "")
  d.innerHTML = `
    <div class="goal-title">${g.name}</div>
 
-   <div class="goal-ring"
-        style="
-          --p:${percent}%;
-          background:conic-gradient(${color} var(--p), #e9ecf5 0);
-        ">
+<div class="goal-ring-wrap">
 
-     <div class="goalIcon">
- <i data-lucide="${g.icon || 'target'}"></i>
+ <svg class="goal-ring" viewBox="0 0 120 120">
+
+  <circle
+   cx="60" cy="60" r="52"
+   class="ring-bg"
+  />
+
+  <circle
+   cx="60" cy="60" r="52"
+   class="ring-fill"
+   stroke="${color}"
+   stroke-dasharray="327"
+   stroke-dashoffset="${327 - 327*percent/100}"
+  />
+
+ </svg>
+
+ <div class="goal-center-icon">
+  <i data-lucide="${g.icon || 'target'}"></i>
+ </div>
+
 </div>
-    
-   </div>
 
   
 
@@ -1597,7 +1769,8 @@ d.className = "goal-bubble" + (percent>=100 ? " done" : "")
   showGoalPop()
  }
 
- return d
+ setTimeout(()=>lucide.createIcons(),0)
+return d
 }
 
 function openGoalDetail(id){
@@ -1798,92 +1971,46 @@ function renderPlanDialog(filter){
     box.appendChild(d)
   })
 
-lucide.createIcons()
+setTimeout(()=>lucide.createIcons(),0)
 
 }
-// ========= CREATE TASK FROM PLAN DIALOG =========
 
 function renderCreateTask(){
 
- app.innerHTML = `
- <h1>Neuer Task ✅</h1>
+ const name = prompt("Task Name")
+ if(!name) return
 
- <div class="card">
+ const taskId = uid()
 
-   <input id="newTaskName" placeholder="Task Name">
+ const category = (prompt(
+  "Kategorie:\nselfcare, bewegung, haushalt, essen, gesundheit, natur, erfolg, ziele"
+ ) || "default").toLowerCase().trim()
 
-   <div id="taskIconPreview"
-     style="font-size:28px;margin-top:12px">
-     <i data-lucide="circle"></i>
-   </div>
+ openIconPicker(icon => {
 
-   <button onclick="openIconPicker(setTaskIcon)">
-     Icon wählen
-   </button>
+  catalog.push({
+   id: taskId,
+   name,
+   icon: icon || "circle",
+   category
+  })
 
- </div>
+  save("catalog", catalog)
 
- <button class="primary"
-  onclick="saveNewTaskFromDialog()">
-  Speichern & Planen
- </button>
+  renderPlanDialog("")
 
- <button onclick="openPlanDialog()">⬅ Zurück</button>
- `
-
- lucide.createIcons()
-}
-
-function savePlanForm(taskId){
-
- const time = document.getElementById("planTime").value
- const interval = document.getElementById("planInterval").value
- const everyX = parseInt(
-  document.getElementById("everyXInput")?.value || 1,10
- )
-
- const startDate =
-  document.getElementById("planDate").value || todayISO()
-
- plans.push({
-  id: uid(),
-  taskId,
-  times: [time],
-  interval,
-  everyX,
-  start: startDate,
-  success: document.getElementById("planStreak")?.checked || false
  })
 
- save("plans", plans)
-
-cleanupOverlays()
-render()
 }
 
-// ========= ROUTER =========
+// ========= CREATE TASK FROM PLAN DIALOG =========
 
-let page="home"
 
-document.querySelectorAll(".tabbar button").forEach(b=>{
- b.onclick=()=>{page=b.dataset.page; render()}
-})
-
-let pickedGoalIcon = "target"
-
-function pickGoalIcon(name){
- pickedGoalIcon = name
-
- const p = document.getElementById("goalIconPreview")
- if(p){
-  p.innerHTML = `<i data-lucide="${name}"></i>`
-  lucide.createIcons()
- }
-}
 
 function render(){
 
- document.querySelectorAll(".modal, .breath-overlay, .goal-pop")
+ // nur alte goal-pop entfernen — modals NICHT hart killen
+ document.querySelectorAll(".goal-pop")
   .forEach(e => e.remove())
 
  if(page==="home") renderHome()
@@ -1896,8 +2023,6 @@ function render(){
 
  setTimeout(()=>lucide.createIcons(),0)
 }
-
-render()
 
 // =====================
 // PLAN MODAL UI
@@ -1913,41 +2038,48 @@ function openPlanForm(taskId){
 
  <h2>Task planen</h2>
 
-
 <label>Startdatum</label>
 <input type="date" id="planDate" value="${todayISO()}">
 
- <label>Uhrzeit</label>
- <input type="time" id="planTime" value="${new Date().toTimeString().slice(0,5)}">
+<label>Uhrzeit</label>
+<input type="time" id="planTime"
+ value="${new Date().toTimeString().slice(0,5)}">
 
- <label>Intervall</label>
+<label>Intervall</label>
 
 <select id="planInterval" onchange="toggleEveryX()">
-  <option value="once">einmalig</option>
-  <option value="daily">täglich</option>
-  <option value="weekly">wöchentlich</option>
-  <option value="monthly">monatlich</option>
-  <option value="everyX">alle X Tage</option>
+<option value="once">einmalig</option>
+<option value="daily">täglich</option>
+<option value="weekly">wöchentlich</option>
+<option value="monthly">monatlich</option>
+<option value="everyX">alle X Tage</option>
 </select>
 
 <label style="margin-top:10px;display:block">
-
 <input type="checkbox" id="planStreak">
  zählt als Erfolg ⭐
 </label>
 
- <div id="everyXBox" style="display:none">
-  <label>Alle X Tage</label>
-  <input type="number" id="everyXInput" value="3">
- </div>
+<div id="everyXBox" style="display:none">
+<label>Alle X Tage</label>
+<input type="number" id="everyXInput" value="3">
+</div>
 
- <button class="primary" onclick="savePlanForm('${taskId}')">Speichern</button>
- <button onclick="closeModal()">Abbrechen</button>
+<button class="primary"
+ onclick="savePlanForm('${taskId}')">
+Speichern
+</button>
 
- </div>
- `
+<button onclick="closeModal()">
+Abbrechen
+</button>
+
+</div>
+`
 
  document.body.appendChild(modal)
+
+ lucide.createIcons()   // ← wichtig
 }
 
 function toggleEveryX(){
@@ -2039,12 +2171,7 @@ function openGoalCreate(){
 
 </div>
 
-<button onclick="openIconPicker(icon=>{
- pickedGoalIcon = icon
- document.getElementById("goalIconPreview").innerHTML =
-   '<i data-lucide="'+icon+'"></i>'
- lucide.createIcons()
-})">
+<button onclick="openIconPicker(goalCreateIconPickHandler)">
 Icon wählen
 </button>
 
@@ -2085,9 +2212,10 @@ Speichern
 <button onclick="renderGoals()">
 Abbrechen
 </button>
-
-
 `
+
+setTimeout(()=>lucide.createIcons(),0)
+
 }
 
 // ======================
@@ -2207,8 +2335,6 @@ Weiter
 }
 
 
-// ---------- STEP 3 ----------
-
 function goalWizardStep3(){
 
  goalDraft.start = wizStart.value || todayISO()
@@ -2238,17 +2364,25 @@ ${
 <option value="">—</option>
 ${
  metricDefs.map(m =>
-  `<option value="${m.key}">
-   ${m.label}
-  </option>`
+  `<option value="${m.key}">${m.label}</option>`
  ).join("")
 }
 </select>
 
 </div>
 
+<button onclick="openIconPicker(goalIconPickHandler)">
+Icon wählen
+</button>
+
+<div id="wizIconPrev"></div>
+
 <button class="primary"
- onclick="finishGoalWizard()">
+ onclick="
+ goalDraft.taskId = wizTask.value || null;
+ goalDraft.metricKey = wizMetric.value || null;
+ finishGoalWizard();
+">
 Ziel speichern
 </button>
 
@@ -2257,7 +2391,11 @@ Ziel speichern
 </button>
 
 `
+
+ setTimeout(()=>lucide.createIcons(),0)
 }
+
+
 
 
 // ---------- FINISH ----------
@@ -2265,28 +2403,23 @@ Ziel speichern
 function finishGoalWizard(){
 
  const goal = {
-
   id: uid(),
-
   name: goalDraft.name,
-  why: goalDraft.why,
-
+  target: goalDraft.target,
   start: goalDraft.start,
   due: goalDraft.due,
-
-  mode: goalDraft.mode,
-  target: goalDraft.target,
-  rhythm: goalDraft.rhythm,
-
-  taskId: wizTask.value || null,
-  metricKey: wizMetric.value || null,
-
-  img: null
+  why: goalDraft.why,
+  note: goalDraft.note,
+  taskId: goalDraft.taskId || null,
+  manual: 0,
+  archived: false,
+  icon: pickedGoalIcon || "target"
  }
 
  goals.push(goal)
  save("goals", goals)
 
+ cleanupOverlays()
  renderGoals()
 }
 
@@ -2679,9 +2812,6 @@ function drawMetricChart(arr){
 
  const ctx = c.getContext("2d")
 
- const w = c.width = c.offsetWidth
- const h = c.height
-
  const values = arr
   .map(x => Number(x.value))
   .filter(v => !isNaN(v))
@@ -2692,6 +2822,9 @@ function drawMetricChart(arr){
  const min = Math.min(...values)
  const max = Math.max(...values)
  const range = (max-min) || 1
+
+const w = c.width = 300
+const h = c.height = 160
 
  ctx.clearRect(0,0,w,h)
 
@@ -2778,7 +2911,8 @@ onclick="saveStoragePlanFromModal()">
 
 function saveStoragePlan(storage){
 
- const time = document.getElementById("planTime").value
+const time = document.getElementById("planTime").value
+
  const interval = document.getElementById("planInterval").value
  const startDate =
   document.getElementById("planDate").value || todayISO()
@@ -3262,8 +3396,7 @@ function saveCustomMetric(){
   return
  }
 
- const key =
-  name.toLowerCase().replace(/\s+/g,"_")
+const key = name.toLowerCase().replace(/\s+/g, "_")
 
  if(metricDefs.find(m=>m.key===key)){
   alert("Schon vorhanden")
@@ -3291,793 +3424,97 @@ function deleteMetricDef(key){
  renderSettings()
 }
 
-function savePregnancyStart(){
-
- pregnancyStart =
-  document.getElementById("pregDate").value || null
-
- save("pregnancyStart", pregnancyStart)
- renderSettings()
-}
-
-function hardResetSafe(){
-
- const ok = prompt(
-  "Zum vollständigen Reset bitte RESET eingeben"
- )
-
- if(ok !== "RESET"){
-  alert("Abgebrochen")
-  return
- }
-
- if(!confirm("Wirklich gesamte App löschen?")){
-  return
- }
-
- localStorage.clear()
- location.reload()
-}
-
-function addCycleStart(){
-
- const d = document.getElementById("cycleDate").value
- if(!d) return
-
- cycleStarts.push(d)
- save("cycleStarts", cycleStarts)
-
- renderSettings()
-}
-
-function hardReset(){
-
- if(!confirm("Wirklich ALLES löschen?")) return
-
- localStorage.clear()
- location.reload()
-}
-
-
-
-
-
-function saveProfile(){
-
- profile.name =
-  document.getElementById("setName").value || "Friend"
-
- profile.birthYear =
-  parseInt(document.getElementById("setYear").value) || null
-
- save("profile", profile)
-
- alert("Profil gespeichert")
- render()
-}
-
-// =============================
-// BREATHING PANIC OVERLAY
-// =============================
-
-
-function openPanicOverlay(){
-
- panicStep = 1
-
- const box = document.createElement("div")
- box.className = "breath-overlay"
- box.id = "panicOverlay"
-
- document.body.appendChild(box)
-
- renderPanicStep()
-}
-
-function closePanicOverlay(){
-
- if(breathTimer){
-  clearTimeout(breathTimer)
-  breathTimer = null
- }
-
- const box = document.getElementById("panicOverlay")
- if(box) box.remove()
-
- document.body.style.pointerEvents = "auto"
-}
-
-function renderPanicStep(){
-
- const box = document.getElementById("panicOverlay")
- if(!box) return
-
- if(breathTimer){
-  clearTimeout(breathTimer)
-  breathTimer = null
- }
-
- // STEP 1 — BREATH
- if(panicStep === 1){
-
-  box.innerHTML = `
-  <div class="breath-box">
-
-   <div style="opacity:.6">Panic Button • 1/4</div>
-
-   <svg width="180" height="180">
-    <circle cx="90" cy="90" r="70"
-     stroke="#dfeeea"
-     stroke-width="10"
-     fill="none"/>
-
-    <circle id="breathRing"
-     cx="90" cy="90" r="70"
-     stroke="#7ecfc0"
-     stroke-width="10"
-     fill="none"
-     stroke-linecap="round"
-     stroke-dasharray="440"
-     stroke-dashoffset="440"/>
-   </svg>
-
-   <div id="breathText">Einatmen</div>
-
-   <button class="primary" onclick="panicNext()">weiter</button>
-
-<button class="primary"
- onclick="closePanicOverlay(); triggerPostPanicSupport()">
- fertig
-</button>
-
-  </div>
-  `
-
-  startBreathingCycle()
-  return
- }
-
-if(panicStep === 2){
- box.innerHTML = `
- <div class="breath-box">
-
-  <div style="opacity:.6">2/4</div>
-
-  <h3>Fokus 5-4-3-2-1</h3>
-
-  <div class="panicInfoWrap">
-
-   <button class="panicInfoBtn"
-    onclick="togglePanicInfo()">ℹ️</button>
-
-   <div id="panicInfoText" class="panicInfoText">
-    Diese Übung bringt dein Nervensystem
-    vom Alarmzustand zurück ins Hier-und-Jetzt.
-   </div>
-
-  </div>
-
-  <div class="focusItem">
-    <div class="focusTitle">👁 5 Dinge sehen</div>
-    <div class="focusSub">
-      sichtbare Objekte • Farben • Formen • Details
-    </div>
-  </div>
-
-  <div class="focusItem">
-    <div class="focusTitle">✋ 4 Dinge fühlen</div>
-    <div class="focusSub">
-      Körperkontakt • Kleidung • Stuhl • Boden • Luft
-    </div>
-  </div>
-
-  <div class="focusItem">
-    <div class="focusTitle">👂 3 Geräusche hören</div>
-    <div class="focusSub">
-      nahe + entfernte unterscheiden
-    </div>
-  </div>
-
-  <div class="focusItem">
-    <div class="focusTitle">👃 2 Dinge riechen</div>
-    <div class="focusSub">
-      Düfte oder neutrale Gerüche
-    </div>
-  </div>
-
-  <div class="focusItem">
-    <div class="focusTitle">👅 1 Geschmack</div>
-    <div class="focusSub">
-      Geschmack bewusst bemerken
-    </div>
-  </div>
-
-  <button class="primary" onclick="panicNext()">weiter</button>
-  <button onclick="panicBack()">zurück</button>
-
-<button onclick="closePanicOverlay()">abbrechen</button>
-
- </div>`
- return
-}
-
-if(panicStep === 3){
- box.innerHTML = `
- <div class="breath-box">
-
-  <div style="opacity:.6">3/4</div>
-
-  <h3>Körper stabilisieren</h3>
-
-  <div class="panicExplain">
-   Körperdruck und Muskelspannung helfen,
-   das Stresssignal im Nervensystem zu senken.
-  </div>
-
-  <div class="focusItem">
-    <div class="focusTitle">✊ Hände drücken</div>
-    <div class="focusSub">
-      beide Hände fest zusammendrücken – 10 Sekunden halten
-    </div>
-  </div>
-
-  <div class="focusItem">
-    <div class="focusTitle">🦶 Füße erden</div>
-    <div class="focusSub">
-      Füße bewusst in den Boden drücken – Kontakt spüren
-    </div>
-  </div>
-
-  <div class="focusItem">
-    <div class="focusTitle">✨ Schultern lösen</div>
-    <div class="focusSub">
-      Schultern hochziehen – fallen lassen – 3× wiederholen
-    </div>
-  </div>
-
-  <button class="primary" onclick="panicNext()">weiter</button>
-  <button onclick="panicBack()">zurück</button>
-<button onclick="closePanicOverlay()">abbrechen</button>
-
- </div>`
- return
-}
-
- // STEP 4 — CALM
- if(panicStep === 4){
-  box.innerHTML = `
-  <div class="breath-box">
-   <div>4/4</div>
-   Du bist sicher 🤍<br>
-   Die Welle geht vorbei 🌊<br><br>
-
-<button class="primary"
- onclick="closePanicOverlay(); triggerPostPanicSupport()">
- fertig
-</button>
-
-  </div>`
- }
-}
-
-function panicNext(){
- panicStep++
-
- if(panicStep > 4){
-  closePanicOverlay()
-
-triggerAffirmation()
-openStateCheckOverlay()
-
-  return
- }
-
- renderPanicStep()
-}
-
-function panicBack(){
- panicStep--
- if(panicStep < 1) panicStep = 1
- renderPanicStep()
-}
-
-function togglePanicInfo(){
- const el = document.getElementById("panicInfoText")
- if(!el) return
-
- el.style.display =
-  el.style.display === "block" ? "none" : "block"
-}
-
-function triggerPostPanicSupport(){
- triggerAffirmation()
- renderHome()
-}
-
-let breathTimer = null
-
-function startBreathingCycle(){
-
- const ring = document.getElementById("breathRing")
- const text = document.getElementById("breathText")
-
- if(!ring || !text) return
-
- const full = 440
-
- // 🔧 Reset ohne Animation
- ring.style.transition = "none"
- ring.style.strokeDashoffset = full
-
- // Force layout → wichtig
- ring.getBoundingClientRect()
-
- function animateTo(val, dur){
-  ring.style.transition = `stroke-dashoffset ${dur}ms linear`
-  ring.style.strokeDashoffset = val
- }
-
- function inhale(){
-  text.innerHTML = "Einatmen"
-  animateTo(0, 4000)
-  breathTimer = setTimeout(hold, 4000)
- }
-
- function hold(){
-  text.innerHTML = "Halten"
-  breathTimer = setTimeout(exhale, 4000)
- }
-
- function exhale(){
-  text.innerHTML = "Ausatmen"
-  animateTo(full, 8000)
-  breathTimer = setTimeout(inhale, 8000)
- }
-
- // 🔧 minimal delay → verhindert Startglitch
- breathTimer = setTimeout(inhale, 80)
-}
-
-
-// ======================
-// STATE CHECK SYSTEM
-// ======================
-
-function openStateCheckOverlay(){
-
- let box = document.getElementById("panicOverlay")
-
- if(!box){
-  box = document.createElement("div")
-  box.className = "breath-overlay"
-  box.id = "panicOverlay"
-  document.body.appendChild(box)
- }
-
- box.style.display = "flex"
-
- box.innerHTML = `
-<div class="breath-box">
-
- <h3>Wie ist deine Energie gerade?</h3>
-
- <div style="display:flex;flex-direction:column;gap:12px">
-
-  <button class="primary"
-   onclick="handleEnergyChoice('low')">
-   niedrig
-  </button>
-
-  <button class="primary"
-   onclick="handleEnergyChoice('mid')">
-   mittel
-  </button>
-
-  <button class="primary"
-   onclick="handleEnergyChoice('ok')">
-   ok
-  </button>
-
- </div>
-
- <button style="margin-top:16px"
-  onclick="closePanicOverlay(); renderHome()">
-  schließen
- </button>
-
-</div>
-`
-}
+// ===== mood detail safe =====
 
 function renderMoodBarChart(){
-
- const last = moods.slice(-7)
-
- if(!last.length){
-  return `<div class="card">Noch keine Daten</div>`
- }
-
- return `
- <div class="card">
- <h3>7 Tage Trend</h3>
-
- <div class="moodBars">
-
- ${last.map(m=>{
-  const s = moodScore[m.emoji] || 3
-  return `
-   <div class="moodBarWrap">
-    <div class="moodBar"
-     style="height:${s*18}px"></div>
-    <div class="moodBarEmoji">
-     ${m.emoji}
-    </div>
-   </div>
-  `
- }).join("")}
-
- </div>
- </div>
- `
+ return `<div class="card">Chart folgt</div>`
 }
 
-function handleEnergyChoice(level){
-
- let action = null
-
- if(level === "low") action = "reset"
- if(level === "mid") action = "breath"
- if(level === "ok")  action = "continue"
-
- runMiniAction(action)
-}
-
-
-function runMiniAction(type){
-
- let box = document.getElementById("panicOverlay")
-
- if(!box){
-  box = document.createElement("div")
-  box.className = "breath-overlay"
-  box.id = "panicOverlay"
-  document.body.appendChild(box)
- }
-
- box.style.display = "flex"
-
- if(type === "reset"){
-
-  box.innerHTML = `
-   <div class="breath-box">
-    <h3>2-Minuten Reset 🌿</h3>
-    Augen schließen — 10 Atemzüge zählen.
-    <br><br>
-
-    <button class="primary"
-     onclick="closePanicOverlay(); triggerAffirmation(); renderHome()">
-     fertig
-    </button>
-
-    <button onclick="closePanicOverlay(); renderHome()">
-     abbrechen
-    </button>
-
-   </div>
-  `
-  return
- }
-
- if(type === "breath"){
-  panicStep = 1
-  renderPanicStep()
-  return
- }
-
- closePanicOverlay()
- renderHome()
-}
-
-// ======================
-// MOOD INTELLIGENCE
-// ======================
-
-function buildMoodInsights(){
-
- const list = moods.slice(-14)
- if(list.length < 5) return null
-
- const scores =
-  list.map(x => moodScore[x.emoji] || 3)
-
- const avg =
-  scores.reduce((a,b)=>a+b,0) / scores.length
-
- const min = Math.min(...scores)
- const max = Math.max(...scores)
-
- const variance = max - min
-
- let stability = "stabil"
-
- if(variance >= 3) stability = "stark schwankend"
- else if(variance === 2) stability = "wechselhaft"
-
- return {
- avg: avg,
-  min,
-  max,
-  variance,
-  stability
- }
-}
-
-function moodByTimeOfDay(){
-
- if(!moods.length) return null
-
- const buckets = {
-  morning: [],
-  mid: [],
-  evening: [],
-  night: []
- }
-
- moods.forEach(m=>{
-
-  const s = moodScore[m.emoji] || 3
-
-  if(buckets[m.phase]){
-    buckets[m.phase].push(s)
-  }
-
- })
-
- function avg(arr){
-  if(!arr.length) return null
-  return arr.reduce((a,b)=>a+b,0)/arr.length
- }
-
-return {
- morning: avg(buckets.morning),
- mid: avg(buckets.mid),
- evening: avg(buckets.evening),
- night: avg(buckets.night)
-}
-
-}
-
-function moodDistributionUI(counts){
-
- return Object.entries(counts)
-  .map(([emoji,n])=>`
-   <div class="moodChip">
-    <div class="moodBig">${emoji}</div>
-    <div>${n}</div>
-   </div>
-  `).join("")
+function moodColor(score){
+ if(score <= 2) return "#ffd6d6"
+ if(score === 3) return "#fff3cd"
+ return "#d6f5dd"
 }
 
 function moodInsightText(){
-
- const base = buildMoodInsights()
- if(!base) return "Noch zu wenig Mood-Daten für eine Auswertung 🌱"
-
- let txt = ""
-
- // Durchschnitt
- if(base.avg >= 4.3){
-  txt += "Deine Stimmung ist aktuell überwiegend stabil & positiv 🌤 "
- }
- else if(base.avg >= 3.4){
-  txt += "Deine Stimmung ist gemischt — mit guten Momenten dazwischen 🌿 "
- }
- else{
-  txt += "Deine Stimmung wirkt derzeit eher belastet — mehr Selbstfürsorge sinnvoll 🤍 "
- }
-
- // Stabilität
- if(base.stability === "stabil"){
-  txt += "Der Verlauf zeigt wenig Schwankung."
- }
- else if(base.stability === "wechselhaft"){
-  txt += "Es gibt merkliche Schwankungen über die Tage."
- }
- else{
-  txt += "Starke Schwankungen erkennbar — achte gut auf deine Ressourcen."
- }
-
- // Tageszeit Muster
- const t = moodByTimeOfDay()
-
- if(t && t.morning != null && t.evening != null){
-
- if(t.evening < t.morning - 0.8){
-   txt += " Abends scheint es dir häufiger schwerer zu fallen 🌙"
-  }
-
-  if(t.morning && t.morning > 4.4){
-   txt += " Morgens startest du oft stabil in den Tag ☀️"
-  }
- }
-
- return txt
+ return "Analyse wird aufgebaut…"
 }
 
-function openMoodDistributionDetail(){
-
- const counts = {}
-
- moods.forEach(m=>{
-  counts[m.emoji] = (counts[m.emoji]||0)+1
- })
-
- app.innerHTML = `
- <h1>Mood Verteilung</h1>
- <button onclick="openMoodInsights()">⬅ zurück</button>
-
- <div class="card">
- ${Object.entries(counts)
-   .map(x=>`
-    <div style="font-size:22px;margin:8px 0">
-     ${x[0]} — ${x[1]}x
-    </div>
-   `).join("")}
- </div>
- `
+function moodDistributionUI(counts){
+ return Object.entries(counts)
+  .map(([e,n])=>`${e} ${n}`)
+  .join(" ")
 }
-
-function openMoodTextDetail(){
-
- app.innerHTML = `
- <h1>Mood Analyse Detail</h1>
-
- <button onclick="openMoodInsights()">⬅ zurück</button>
-
- <div class="card">
-   ${moodInsightText()}
- </div>
- `
-}
-
 
 function openMoodPhaseDetail(){
-
- const t = moodByTimeOfDay()
-
- app.innerHTML = `
- <h1>Mood Tageszeiten</h1>
- <button onclick="openMoodInsights()">⬅ zurück</button>
-
- <div class="card">
- ☀️ Morgen: ${t?.morning ? scoreLabel(t.morning) : "—"}<br>
- 🌿 Mittag: ${t?.mid ? scoreLabel(t.mid) : "—"}<br>
- 🌙 Abend: ${t?.evening ? scoreLabel(t.evening) : "—"}<br>
- 🌌 Nacht: ${t?.night ? scoreLabel(t.night) : "—"}
- </div>
- `
+ alert("Phase Detail folgt")
 }
 
 function openMoodTrendDetail(){
+ alert("Trend Detail folgt")
+}
 
- const map = {}
+function openMoodTextDetail(){
+ alert("Text Detail folgt")
+}
 
- moods.forEach(m=>{
-  const w = getWeekNumber(new Date(m.date))
-  if(!map[w]) map[w]=[]
-  map[w].push(m.emoji)
+function openMoodDistributionDetail(){
+ alert("Distribution Detail folgt")
+}
+
+function openMoodCycleDetail(){
+ alert("Cycle Detail folgt")
+}
+
+function savePlanForm(taskId){
+
+const time = document.getElementById("planTime")?.value || "09:00"
+
+ const date = document.getElementById("planDate").value || todayISO()
+ const interval = document.getElementById("planInterval").value
+ const streak = document.getElementById("planStreak")?.checked || false
+
+ const everyX =
+  interval === "everyX"
+   ? parseInt(document.getElementById("everyXInput").value,10) || 1
+   : 1
+
+ plans.push({
+  id: uid(),
+  taskId,
+  times: [time],
+  interval,
+  everyX,
+  start: date,
+  success: streak
  })
 
- app.innerHTML = `
- <h1>Mood Wochen Trend</h1>
- <button onclick="openMoodInsights()">⬅ zurück</button>
+ save("plans", plans)
 
- <div class="card">
- ${Object.entries(map)
-   .sort((a,b)=>a[0]-b[0])
-   .map(([w,arr])=>
-     `Woche ${w}: ${scoreLabel(avgMoodScore(arr))}`
-   ).join("<br>")}
- </div>
- `
+ closeModal()
+ render()
 }
 
-function startMiniReset(){
-
- alert(
-  "Mini Reset 🌿\n\n" +
-  "• Schultern lockern\n" +
-  "• 6 tiefe Atemzüge\n" +
-  "• Hände reiben\n" +
-  "• Blick in die Ferne"
- )
-
-}
-
-function saveNewTaskFromDialog(){
-
- const name = document.getElementById("newTaskName").value.trim()
-
- if(!name){
-  alert("Name fehlt")
-  return
- }
-
- const id = uid()
-
- catalog.push({
- id,
- name,
- icon: pickedIcon || "check"
-})
-
- save("catalog", catalog)
-
- cleanupOverlays()
-openPlanForm(id)
-}
-
-///////// ICONS //////
-
-const ICONS = [
-
- // wellness / body
- "heart","sparkles","leaf","sun","moon","flower",
- "droplet","feather","cloud","cloud-rain",
-
- // movement
- "activity","dumbbell","bike","footprints",
- "mountain","waves","stretch-horizontal",
-
- // yoga / calm
- "lotus","wind","circle","circle-dot","focus",
-
- // sport
- "zap","flame","timer","target","trophy",
-
- // food
- "apple","utensils","coffee","cup-soda","salad",
-
- // home
- "home","bed","sofa","lamp","bath",
-
- // cleaning
- "trash","spray-can","brush","archive","box",
-
- // shopping
- "shopping-cart","store","package","credit-card",
-
- // planning
- "calendar","check","check-circle","clipboard",
-
- // mind
- "brain","book","pen","pencil","bookmark"
-]
-
-
-
-
-
-
-function renderIconGrid(list){
-
- const grid = document.getElementById("iconGrid")
- if(!grid) return
-
- grid.innerHTML = list.map(name=>`
-  <div class="iconBtn"
-    onclick="pickIcon('${name}')">
-    <i data-lucide="${name}"></i>
-  </div>
- `).join("")
-
+function selectGoalIcon(name){
+ pickedGoalIcon = name
+ closeModal()
+ renderGoals()
  setTimeout(()=>lucide.createIcons(),0)
 }
 
-function filterIcons(q){
- q = q.toLowerCase()
- renderIconGrid(
-  ICONS.filter(x => x.includes(q))
- )
-}
 
+
+document.addEventListener("DOMContentLoaded", () => {
+
+ app = document.getElementById("app")
+
+ document.querySelectorAll(".tabbar button")
+ .forEach(btn=>{
+  btn.onclick = ()=>{
+   page = btn.dataset.page
+   render()
+  }
+ })
+
+ render()
+})

@@ -130,25 +130,6 @@ padding:8px;
  transform:translateY(6px);
 }
 
-.goal-ring{
- width:120px;
- height:120px;
- border-radius:50%;
- display:flex;
- align-items:center;
- justify-content:center;
- position:relative;
-}
-
-.goal-ring img{
- width:86px;
- height:86px;
- border-radius:50%;
- object-fit:cover;
- z-index:2;
- background:white;
-}
-
 .goal-title{
  font-size:15px;
  font-weight:600;
@@ -160,15 +141,6 @@ padding:8px;
  font-size:14px;
  margin-top:8px;
  font-weight:600;
-}
-
-.goal-ring::after{
- content:"";
- position:absolute;
- width:70px;
- height:70px;
- border-radius:50%;
- background:white;
 }
 
 .goal-pop{
@@ -213,20 +185,6 @@ padding:8px;
  object-fit:cover;
  box-shadow:0 6px 18px rgba(0,0,0,.15);
  margin-bottom:14px;
-}
-
-.goal-big-ring{
- width:160px;
- height:160px;
- border-radius:50%;
- margin:14px auto;
- display:flex;
- align-items:center;
- justify-content:center;
- font-size:24px;
- font-weight:700;
- background:
- conic-gradient(#7bd68b var(--p), #e9ecf5 0);
 }
 
 .goal-count{
@@ -900,25 +858,6 @@ textarea:focus{
 
 /* ===== ICON PICKER ===== */
 
-.iconGrid{
- display:grid;
- grid-template-columns:repeat(6,1fr);
- gap:10px;
- margin:12px 0;
-}
-
-.iconGrid button{
- background:white;
- border-radius:14px;
- padding:12px;
- border:1px solid #e5e8f0;
-}
-
-.iconGrid svg{
- width:22px;
- height:22px;
-}
-
 .iconDisplay{
  width:42px;
  height:42px;
@@ -929,35 +868,17 @@ textarea:focus{
  justify-content:center;
 }
 
-.taskIcon{
- width:64px;
- height:64px;
- border-radius:16px;
- background:#f2f4f8;
- display:flex;
- align-items:center;
- justify-content:center;
-}
-
-.taskIcon svg{
- width:28px;
- height:28px;
- opacity:.85;
-}
-
 .taskIcon.fallback{
  background:#e5e7ee;
 }
 
 .goalIcon{
- width:60px;
- height:60px;
- border-radius:50%;
- background:#f3f6fb;
+ position:absolute;
+ inset:0;
  display:flex;
  align-items:center;
  justify-content:center;
- font-size:28px;
+ z-index:2;
 }
 
 .goal-detail-icon{
@@ -983,26 +904,6 @@ textarea:focus{
  font-size:14px;
 }
 
-.iconGrid{
- display:grid;
- grid-template-columns:repeat(6,1fr);
- gap:10px;
- max-height:260px;
- overflow:auto;
-}
-
-.iconBtn{
- padding:10px;
- border-radius:14px;
- background:#f3f5fa;
- display:flex;
- align-items:center;
- justify-content:center;
- cursor:pointer;
- transition:.15s;
- font-size:18px;
-}
-
 .iconBtn:hover{
  background:#e8ecf7;
  transform:scale(1.08);
@@ -1018,3 +919,379 @@ textarea:focus{
  margin-bottom:12px;
  font-size:15px;
 }
+
+h1 {
+ font-family: system-ui, -apple-system, sans-serif;
+ text-align: center;
+ margin-top: 18px;
+}
+
+.goal-ring-wrap{
+ position:relative;
+ width:120px;
+ height:120px;
+ margin:auto;
+}
+
+.goal-ring{
+ width:120px;
+ height:120px;
+ transform:rotate(-90deg);
+}
+
+.ring-bg{
+ fill:none;
+ stroke:#e9ecf5;
+ stroke-width:10;
+}
+
+.ring-fill{
+ fill:none;
+ stroke-width:10;
+ stroke-linecap:round;
+ transition:stroke-dashoffset .4s ease;
+}
+
+.goal-center-icon{
+ position:absolute;
+ inset:0;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:34px;
+}
+
+/* =========================
+   ICON PICKER — CATEGORY UI
+========================= */
+
+.iconCategoryTitle{
+ font-size:14px;
+ font-weight:700;
+ margin:14px 4px 6px;
+ opacity:.75;
+ letter-spacing:.4px;
+}
+
+.iconBtn:hover{
+ transform:scale(1.08);
+ box-shadow:0 6px 18px rgba(0,0,0,.08);
+}
+
+.iconBtn svg{
+ width:26px;
+ height:26px;
+}
+
+
+/* ===== CATEGORY COLORS ===== */
+
+.iconCat-Selfcare .iconBtn{
+ background:#fff3f6;
+}
+
+.iconCat-Entspannung .iconBtn{
+ background:#f2fbf7;
+}
+
+.iconCat-Bewegung .iconBtn{
+ background:#f3f7ff;
+}
+
+.iconCat-Haushalt .iconBtn{
+ background:#f7f5ff;
+}
+
+.iconCat-Essen .iconBtn{
+ background:#fff8f1;
+}
+
+.iconCat-Gesundheit .iconBtn{
+ background:#f2faff;
+}
+
+.iconCat-Leben .iconBtn{
+ background:#f5f6fa;
+}
+
+.iconCat-Ziele .iconBtn{
+ background:#f4fff4;
+}
+
+.iconCat-Erfolg .iconBtn{
+ background:#fffbea;
+}
+
+.iconCat-Natur .iconBtn{
+ background:#f1fbf1;
+}
+
+
+/* ===== Preview Area ===== */
+
+.iconPreview{
+ display:flex;
+ align-items:center;
+ gap:14px;
+ padding:12px;
+ border-radius:16px;
+ background:#f6f8fc;
+ margin-bottom:12px;
+ font-size:14px;
+}
+
+.iconPreview svg{
+ width:30px;
+ height:30px;
+}
+
+
+/* ===== Search ===== */
+
+.iconSearch{
+ width:100%;
+ padding:12px;
+ border-radius:14px;
+ border:1px solid #e4e7ef;
+ margin-bottom:10px;
+ font-size:14px;
+ background:#fafbff;
+}
+
+.iconSearch:focus{
+ border-color:#7ecfc0;
+ box-shadow:0 0 0 3px rgba(126,207,192,.15);
+}
+
+.iconCategoryTitle{
+ font-size:13px;
+ font-weight:700;
+ opacity:.6;
+ margin:14px 4px 6px;
+ letter-spacing:.4px;
+}
+
+.iconBtn{
+ padding:12px;
+ border-radius:14px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ cursor:pointer;
+ transition:.18s;
+ background:#f3f5fa;
+}
+
+.iconBtn:hover{
+ transform:scale(1.12);
+ box-shadow:0 6px 16px rgba(0,0,0,.12);
+} .iconCat-Selfcare .iconBtn{ background:#ffe9f0; }
+.iconCat-Entspannung .iconBtn{ background:#e6f7f2; }
+.iconCat-Bewegung .iconBtn{ background:#fff3e0; }
+.iconCat-Haushalt .iconBtn{ background:#eef1f6; }
+.iconCat-Essen .iconBtn{ background:#fff0e6; }
+.iconCat-Gesundheit .iconBtn{ background:#e8f0ff; }
+.iconCat-Leben .iconBtn{ background:#f3f0ff; }
+.iconCat-Ziele .iconBtn{ background:#fff9db; }
+.iconCat-Erfolg .iconBtn{ background:#ffe082; }
+.iconCat-Natur .iconBtn{ background:#e8f5e9; }
+
+/* ===== CATEGORY COLOR SYSTEM ===== */
+
+.cat-selfcare {
+ background:#ffeaf3;
+}
+
+.cat-bewegung {
+ background:#fff6cc;
+}
+
+.cat-haushalt {
+ background:#fff0e0;
+}
+
+.cat-essen {
+ background:#fff0e0;
+}
+
+.cat-gesundheit {
+ background:#efe6ff;
+}
+
+.cat-natur {
+ background:#e8f7ec;
+}
+
+.cat-erfolg {
+ background:#fff6cc;
+ border:1px solid #f2d675;
+}
+
+.cat-ziel {
+ background:#e6f2ff;
+}
+
+/* ===== COMPACT CATEGORY CARDS ===== */
+
+.catGrid{
+ display:grid;
+ grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+ gap:12px;
+}
+
+/* kleine Karten */
+
+.card,
+.task,
+.goal-bubble{
+
+ min-height:auto;
+ padding:10px 12px;
+ border-radius:16px;
+}
+
+/* Titel ausblenden */
+
+.card h3,
+.task h3,
+.goal-title{
+ display:none;
+}
+
+/* Inhalt kompakt */
+
+.card{
+ font-size:14px;
+}
+
+/* Icon mittig */
+
+.taskIcon{
+ width:44px;
+ height:44px;
+ border-radius:12px;
+ background:#f2f4f8;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ flex:0 0 44px;
+}
+
+.taskIcon svg{
+ width:22px;
+ height:22px;
+}
+
+/* ===== Kategorie Farben ===== */
+
+.cat-selfcare{
+ background:#ffe4ec;
+ border-left:6px solid #f8a8c4;
+}
+
+.cat-bewegung{
+ background:#fff7cc;
+ border-left:6px solid #ffe066;
+}
+
+.cat-haushalt,
+.cat-essen{
+ background:#fff0d9;
+ border-left:6px solid #ffb366;
+}
+
+.cat-gesundheit{
+ background:#efe4ff;
+ border-left:6px solid #b388ff;
+}
+
+.cat-natur{
+ background:#e6f7e6;
+ border-left:6px solid #7bd68b;
+}
+
+.cat-erfolg{
+ background:#fff6cc;
+ border-left:6px solid #ffd54f;
+}
+
+.cat-ziele{
+ background:#e3f2ff;
+ border-left:6px solid #64b5f6;
+}
+
+.cat-default{
+ background:#f4f4f4;
+ border-left:6px solid #ccc;
+}
+
+.iconGrid{
+ display:grid;
+ grid-template-columns:repeat(auto-fill, minmax(44px,1fr));
+ gap:10px;
+}
+
+.iconBtn{
+ width:44px;
+ height:44px;
+ border-radius:10px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ background:#fff;
+ border:1px solid #eee;
+ cursor:pointer;
+}
+
+.iconBtn i{
+ width:22px;
+ height:22px;
+}
+
+.task{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ padding:10px 12px;
+ border-radius:14px;
+ margin:8px 0;
+ font-size:14px;
+}
+
+.task-main{
+ display:flex;
+ flex-direction:column;
+ gap:2px;
+}
+
+.taskIcon{
+ width:40px;
+ height:40px;
+ border-radius:12px;
+ background:#f3f5f9;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ flex:0 0 40px;
+}
+
+.taskIcon svg,
+.taskIcon i{
+ width:20px;
+ height:20px;
+}
+
+.catGrid{
+ display:grid;
+ grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+ gap:12px;
+}
+
+.cat-selfcare{background:#ffe4ec;}
+.cat-bewegung{background:#fff7cc;}
+.cat-haushalt{background:#fff0d9;}
+.cat-essen{background:#fff0d9;}
+.cat-gesundheit{background:#efe4ff;}
+.cat-natur{background:#e6f7e6;}
+.cat-erfolg{background:#fff6cc;}
+.cat-ziele{background:#e3f2ff;}
